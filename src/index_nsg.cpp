@@ -59,6 +59,7 @@ void IndexNSG::Load(const char *filename) {
     in.read((char *)tmp.data(), k * sizeof(unsigned));
     final_graph_.push_back(tmp);
   }
+  // 平均出度（？）
   cc /= nd_;
   // std::cout<<cc<<std::endl;
 }
@@ -449,12 +450,14 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
   // std::mt19937 rng(rand());
   // GenRandom(rng, init_ids.data(), L, (unsigned) nd_);
 
+  // 将导航点的全部邻居放入init_ids
   unsigned tmp_l = 0;
   for (; tmp_l < L && tmp_l < final_graph_[ep_].size(); tmp_l++) {
     init_ids[tmp_l] = final_graph_[ep_][tmp_l];
     flags[init_ids[tmp_l]] = true;
   }
 
+  // 导航点邻居不足L个则随机选取节点，直至init_ids包括L个节点
   while (tmp_l < L) {
     unsigned id = rand() % nd_;
     if (flags[id]) continue;
@@ -463,6 +466,7 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     tmp_l++;
   }
 
+  // 将init_ids中的节点放入retset作为候选节点
   for (unsigned i = 0; i < init_ids.size(); i++) {
     unsigned id = init_ids[i];
     float dist =
@@ -472,6 +476,7 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
   }
 
   std::sort(retset.begin(), retset.begin() + L);
+  // greedy search
   int k = 0;
   while (k < (int)L) {
     int nk = L;
@@ -498,6 +503,7 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     else
       ++k;
   }
+  // 记录搜索结果
   for (size_t i = 0; i < K; i++) {
     indices[i] = retset[i].id;
   }

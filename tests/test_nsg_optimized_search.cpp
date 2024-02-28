@@ -41,6 +41,8 @@ void save_result(const char* filename,
   }
   out.close();
 }
+
+// 搜索主函数入口
 int main(int argc, char** argv) {
   if (argc != 7) {
     std::cout << argv[0]
@@ -48,9 +50,11 @@ int main(int argc, char** argv) {
               << std::endl;
     exit(-1);
   }
+  // 读取向量数据集
   float* data_load = NULL;
   unsigned points_num, dim;
   load_data(argv[1], data_load, points_num, dim);
+  // 读取查询向量
   float* query_load = NULL;
   unsigned query_num, query_dim;
   load_data(argv[2], query_load, query_num, query_dim);
@@ -64,6 +68,7 @@ int main(int argc, char** argv) {
     exit(-1);
   }
 
+  // 读取NSG图
   // data_load = efanna2e::data_align(data_load, points_num, dim);//one must
   // align the data before build query_load = efanna2e::data_align(query_load,
   // query_num, query_dim);

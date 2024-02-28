@@ -1,1 +1,6 @@
 build/
+.vscode
+dataset
+knn_graph
+nsg_graph
+search_result

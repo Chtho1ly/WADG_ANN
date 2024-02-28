@@ -111,6 +111,7 @@ static inline int InsertIntoPool (Neighbor *addr, unsigned K, Neighbor nn) {
     addr[K] = nn;
     return K;
   }
+  // 二分查找插入点
   while(left<right-1){
     int mid=(left+right)/2;
     if(addr[mid].distance>nn.distance)right=mid;
