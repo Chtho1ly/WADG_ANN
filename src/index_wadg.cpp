@@ -19,4 +19,22 @@ namespace efanna2e
   IndexWADG::~IndexWADG()
   {
   }
+  void IndexWADG::Search(const float *query, const Parameters &parameters, unsigned *indices)
+  {
+  }
+  void IndexWADG::Set_data(const float *x)
+  {
+  }
+  void IndexWADG::record_query(const float *query)
+  {
+  }
+  void IndexWADG::update_hot_points()
+  {
+  }
+  std::vector<float *> IndexWADG::get_cluster_centers(
+      std::vector<float *> querys,
+      const Parameters &parameters,
+      unsigned num)
+  {
+  }
 }
