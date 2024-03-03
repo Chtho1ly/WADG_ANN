@@ -6,8 +6,8 @@
 #include <cmath>
 #include <boost/dynamic_bitset.hpp>
 
-#include "efanna2e/exceptions.h"
-#include "efanna2e/parameters.h"
+#include <efanna2e/exceptions.h>
+#include <efanna2e/parameters.h>
 
 namespace efanna2e {
 #define _CONTROL_NUM 100
@@ -466,7 +466,7 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     tmp_l++;
   }
 
-  // 将init_ids中的节点放入retset作为候选节点
+  // 将init_ids中的节点放入retset作为候选节点集
   for (unsigned i = 0; i < init_ids.size(); i++) {
     unsigned id = init_ids[i];
     float dist =
