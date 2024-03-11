@@ -87,7 +87,10 @@ int main(int argc, char **argv)
   for (unsigned i = 0; i < query_num; i++)
   {
     std::vector<unsigned> tmp(K);
-    index.Search(query_load + i * dim, paras, tmp.data());
+    // @CS0522
+    // 指向 vector 内部的指针
+    unsigned *tmp_ = tmp.data();
+    index.Search(query_load + i * dim, paras, tmp_);
     res.push_back(tmp);
   }
   auto e = std::chrono::high_resolution_clock::now();
