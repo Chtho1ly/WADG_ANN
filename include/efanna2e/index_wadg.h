@@ -39,16 +39,16 @@ namespace efanna2e
         // 若请求记录窗口已满则进行热点更新，并删除旧的记录
         virtual void record_query(const float *query);
         // 更新热点
-        virtual void update_hot_points();
+        virtual void update_hot_points(std::vector<unsigned> &search_res);
         // 通过K-means获取搜索请求的聚类中心
         virtual std::vector<float *> get_cluster_centers(
-            std::vector<float *> querys,
+            std::vector<const float *> querys,
             const Parameters &parameters,
             unsigned num);
 
     private:
         unsigned max_hot_points_num;          // 最大热点数
-        unsigned window_size;                 // 搜索请求记录窗口大小
+        unsigned window_size;                 // 搜索请求记录窗口大小，远大于 K
         unsigned cluster_num;                 // 聚类中心数
         // std::vector<unsigned> hot_points_lru; // 包含全部有效热点id的LRU队列
         // @CS0522
@@ -56,8 +56,6 @@ namespace efanna2e
         // @CS0522
         // "float *" -> "const float *"
         std::vector<const float *> query_list;      // 窗口内搜索请求记录
-        // @CS0522
-        unsigned *search_res;                 // 记录搜索结果
     };
 }
 
