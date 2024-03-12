@@ -43,6 +43,7 @@ void save_result(char *filename, std::vector<std::vector<unsigned>> &results)
   }
   out.close();
 }
+
 int main(int argc, char **argv)
 {
   if (argc != 7)

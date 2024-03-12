@@ -23,7 +23,9 @@
 
 namespace efanna2e
 {
-#define _CONTROL_NUM 100
+  #define _CONTROL_NUM 100
+  // TODO dkm 的 std::array 必须用常量
+  #define _DIMENSION 128
   // @CS0522
   IndexWADG::IndexWADG(const size_t dimension, const size_t n, Metric m,
                        Index *initializer)
@@ -34,7 +36,7 @@ namespace efanna2e
         // TODO 初始化 window_size 搜索请求记录窗口大小
         
         // TODO 初始化 cluster_num 聚类中心数
-        
+
         // TODO 初始化 query_list 窗口内搜索请求记录
 
         // 初始化 LRU 队列
@@ -67,6 +69,7 @@ namespace efanna2e
   }
 
   // @CS0522
+  // 单线程版
   void IndexWADG::Search(const float *query, const Parameters &parameters, unsigned*& indices)
   {
     const unsigned L = parameters.Get<unsigned>("L_search");
@@ -80,7 +83,9 @@ namespace efanna2e
     unsigned tmp_l = 0;
     for (; tmp_l < L && tmp_l < hot_points_lru->get_size(); tmp_l++)
     {
-      init_ids[tmp_l] = hot_points_lru->get(tmp_l);
+      // LRU 队列 get 后会移至 LRU 头部，所以 index 会变
+      // 倒序加入
+      init_ids[L - tmp_l - 1] = hot_points_lru->get(L - 1);
       flags[init_ids[tmp_l]] = true;
     }
 
@@ -156,39 +161,48 @@ namespace efanna2e
     for (size_t i = 0; i < K; i++)
     {
       indices[i] = retset[i].id;
-      search_res[i] = retset[i].id;
+    }
+    // 热点识别和热点更新
+    // 记录搜索请求
+    record_query(query);
+    // 如果 query_list 窗口已满
+    if (query_list.size() >= window_size)
+    {
+      // 热点识别
+      std::vector<float *> query_centroids = get_cluster_centers(query_list, parameters, query_list.size());
+      // 清空 query_list
+      query_list.clear();
+      // 存储 K 次搜索结果中距离最近的点
+      std::vector<unsigned> search_res(K);
+      // search
+      for (int i = 0; i < query_centroids.size(); i++)
+      {
+        std::vector<unsigned> tmp(K);
+        unsigned *tmp_ = tmp.data();
+        Search(query_centroids[i], parameters, tmp_);
+        // tmp 是 K 个搜索结果
+        // 搜索结果最近的点 tmp[0] 加入到 search_res 中
+        search_res[i] = tmp[0];
+      }
+      // 热点更新
+      update_hot_points(search_res);
     }
   }
 
   // @CS0522
   // 记录搜索请求
-  // 若请求记录窗口已满则进行热点更新，并删除旧的记录
   void IndexWADG::record_query(const float *query)
   {
     // 加入搜索请求
     query_list.push_back(query);
-    // 如果 query_list 已满
-    if (query_list.size() >= window_size)
-    {
-      // TODO 热点更新
-      // TODO 需要放在这里，还是放在 test_index_wadg_search 中
-      update_hot_points();
-      // 删除旧的访问记录
-      query_list.clear();
-    }
   }
 
   // @CS0522
-  void IndexWADG::update_hot_points()
+  void IndexWADG::update_hot_points(std::vector<unsigned> &search_res)
   {
-    // search_res 保存了记录的搜索结果
-    // search_res 中应该是按照距离从近到远保存的搜索结果
-    // K 个搜索结果放到 LRU 头部
-    unsigned K = sizeof(search_res) / sizeof(search_res[0]);
-    for (int i = K - 1; i >= 0; i--)
+    for (int i = search_res.size(); i >= 0; i--)
     {
-      unsigned hot_id = search_res[i];
-      hot_points_lru->put(hot_id);
+      hot_points_lru->put(search_res[i]);
     }
   }
 
@@ -197,7 +211,7 @@ namespace efanna2e
   // num: querys 长度
   // 需要优化，转化过程时间、空间复杂度较高
   std::vector<float *> IndexWADG::get_cluster_centers(
-      std::vector<float *> querys,
+      std::vector<const float *> querys,
       const Parameters &parameters,
       unsigned num)
   {
@@ -206,16 +220,16 @@ namespace efanna2e
     // 调用 dkm 库
     // dkm 接收的数据格式 std::vector< std::array<type, n> >
     // 需要先将 const float* query 转化为 std::array
-    const unsigned dimension_of_query = sizeof(querys[0]) / sizeof(querys[0][0]);
     // 转化 querys
-    std::vector<std::array<float, dimension_of_query> > querys_in_array;
+    // array 长度必须为常量
+    std::vector<std::array<float, _DIMENSION> > querys_in_array;
     int querys_num = querys.size();
     // int querys_num = num;
     for (int i = 0; i < querys_num; i++)
     {
       // 用 std::array 表示一个 query
-      std::array<float, dimension_of_query> query;
-      for (int j = 0; j < dimension_of_query; j++)
+      std::array<float, _DIMENSION> query;
+      for (int j = 0; j < _DIMENSION; j++)
       {
         query[j] = querys[i][j];
       }
@@ -228,13 +242,13 @@ namespace efanna2e
     //Tuple[0]: 返回的是数据集聚类中心的列表 (长度为 K)   
     //Tuple[1]: 返回的是输入数据集对应的标签 (归属于哪一个点)
     auto cluster_data = dkm::kmeans_lloyd(querys_in_array, K);
-    std::vector<std::array<float, dimension_of_query> > cluster_centers = std::get<0>(cluster_data);
+    std::vector<std::array<float, _DIMENSION> > cluster_centers = std::get<0>(cluster_data);
     // 将 std::array 转化回 float *
     std::vector<float *> cluster_centers_result;
     for (int i = 0; i < K; i++)
     {
-      float* cluster_center = new float[dimension_of_query];
-      for (int j = 0; j < dimension_of_query; j++)
+      float* cluster_center = new float[_DIMENSION];
+      for (int j = 0; j < _DIMENSION; j++)
       {
         cluster_center[j] = cluster_centers[i][j];
       }
