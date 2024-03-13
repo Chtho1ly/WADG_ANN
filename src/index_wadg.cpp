@@ -8,7 +8,6 @@
 // k-means 聚类库，性能好
 #include "efanna2e/dkm.hpp"
 #include <vector>
-#include <array>
 #include <algorithm>
 #include <iomanip>
 
@@ -218,37 +217,34 @@ namespace efanna2e
     const unsigned K = parameters.Get<unsigned>("K_search");
 
     // 调用 dkm 库
-    // dkm 接收的数据格式 std::vector< std::array<type, n> >
-    // 需要先将 const float* query 转化为 std::array
-    // 转化 querys
-    // array 长度必须为常量
-    std::vector<std::array<float, _DIMENSION> > querys_in_array;
+    // dkm 接收的数据格式修改为 std::vector<std::vector<T>>
+    // 需要先将 const float* query 转化为 std::vector
     int querys_num = querys.size();
-    // int querys_num = num;
+    std::vector<std::vector<float> > querys_in_vector(0, std::vector<float>(dimension_));
     for (int i = 0; i < querys_num; i++)
     {
-      // 用 std::array 表示一个 query
-      std::array<float, _DIMENSION> query;
-      for (int j = 0; j < _DIMENSION; j++)
+      // 用 std::vector 表示一个 query
+      std::vector<float> query(dimension_);
+      for (int j = 0; j < dimension_; j++)
       {
         query[j] = querys[i][j];
       }
       // 加入 querys_in_array
-      querys_in_array.push_back(query);
+      querys_in_vector.push_back(query);
     } // 转化完成
 
     // 调用 kmeans 函数
     // 返回的结果是一个Tuple   
     //Tuple[0]: 返回的是数据集聚类中心的列表 (长度为 K)   
     //Tuple[1]: 返回的是输入数据集对应的标签 (归属于哪一个点)
-    auto cluster_data = dkm::kmeans_lloyd(querys_in_array, K);
-    std::vector<std::array<float, _DIMENSION> > cluster_centers = std::get<0>(cluster_data);
+    auto cluster_data = dkm::kmeans_lloyd(querys_in_vector, K);
+    std::vector<std::vector<float> > cluster_centers = std::get<0>(cluster_data);
     // 将 std::array 转化回 float *
     std::vector<float *> cluster_centers_result;
     for (int i = 0; i < K; i++)
     {
-      float* cluster_center = new float[_DIMENSION];
-      for (int j = 0; j < _DIMENSION; j++)
+      float* cluster_center = new float[dimension_];
+      for (int j = 0; j < dimension_; j++)
       {
         cluster_center[j] = cluster_centers[i][j];
       }
