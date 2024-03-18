@@ -2,8 +2,8 @@
 // Created by 付聪 on 2017/6/21.
 //
 
-#include <efanna2e/index_wadg.h>
-#include <efanna2e/util.h>
+#include "efanna2e/index_wadg.h"
+#include "efanna2e/util.h"
 
 void load_data(char *filename, float *&data, unsigned &num,
                unsigned &dim)
