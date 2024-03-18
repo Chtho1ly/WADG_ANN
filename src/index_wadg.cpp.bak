@@ -64,9 +64,8 @@ namespace efanna2e
   }
 
   // @CS0522
-  // TODO 修改为多线程
-  void IndexWADG::Search(const float *query, const Parameters &parameters, unsigned*& indices,
-                          bool record_query_flag)
+  // 单线程版
+  void IndexWADG::Search(const float *query, const Parameters &parameters, unsigned*& indices)
   {
     const unsigned L = parameters.Get<unsigned>("L_search");
     const unsigned K = parameters.Get<unsigned>("K_search");
@@ -77,8 +76,6 @@ namespace efanna2e
 
     // 从 LRU 缓存中选取离搜索目标最近的 L 个点作为初始队列 init_ids
     unsigned tmp_l = 0;
-    // 上锁
-    mtx_lru.lock();
     for (; tmp_l < L && tmp_l < hot_points_lru->get_size(); tmp_l++)
     {
       // LRU 队列 get 后会移至 LRU 头部，所以 index 会变
@@ -86,8 +83,6 @@ namespace efanna2e
       init_ids[L - tmp_l - 1] = hot_points_lru->get(L - 1);
       flags[init_ids[tmp_l]] = true;
     }
-    // 解锁
-    mtx_lru.unlock();
 
     // 不足 L 个则随机选取节点，直至 init_ids 包括 L 个节点
     while (tmp_l < L)
@@ -162,83 +157,42 @@ namespace efanna2e
     {
       indices[i] = retset[i].id;
     }
-    
-    // 若 flag == true
-    // 并未进行热点识别和热点更新
+    // 热点识别和热点更新
+    // 记录搜索请求
     if (record_query_flag == true)
     {
       record_query(query);
       // 如果 query_list 窗口已满
       if (query_list.size() >= window_size)
       {
-        // 多线程热点识别和热点更新
-        std::thread t_tmp(identify_and_update, 
-                    std::ref(query), std::ref(parameters), std::ref(indices), false);
-        // 不能阻塞 Search 过程
-        // 可能存在问题 Search 函数已经循环结束，热点识别还未结束
-        t_tmp.detach();
+        // 热点识别
+        std::vector<float *> query_centroids = get_cluster_centers(query_list, parameters, query_list.size());
+        
+        // 清空 query_list
+        query_list.clear();
+        // record_query_flag 置为 false
+        record_query_flag = false;
+
+        // 存储 K 次搜索结果中距离最近的点
+        std::vector<unsigned> search_res(K);
+        // search
+        for (int i = 0; i < query_centroids.size(); i++)
+        {
+          std::vector<unsigned> tmp(K);
+          unsigned *tmp_ = tmp.data();
+          // flag 为 false，在热点搜索过程中不会记录搜索请求
+          Search(query_centroids[i], parameters, tmp_);
+          // tmp 是 K 个搜索结果
+          // 搜索结果最近的点 tmp[0] 加入到 search_res 中
+          search_res[i] = tmp[0];
+        }
+        // 热点更新
+        update_hot_points(search_res);
+        // record_query_flag 置为 true
+        record_query_flag = true;
       }
-      // 清空 query_list
-      query_list.clear();
-    }
-    // 若 flag == false
-    // 热点识别和热点更新
-    else
-    {
-      // 本次搜索结果的最近的点作为热点之一
-      search_res.push_back(indices[0]);
     }
   }
-
-  
-  // @CS0522
-  // 用于多线程的热点识别和热点更新
-  void IndexWADG::identify_and_update(const float* query, const Parameters &parameters, unsigned* &indices, 
-                                      bool record_query_flag = false)    // record_query_flag = false
-  {
-    //热点识别
-    auto start_identify = std::chrono::high_resolution_clock::now();
-    std::vector<float *> query_centroids = get_cluster_centers(query_list, parameters, query_list.size());
-
-    const unsigned K = parameters.Get<unsigned>("K_search");
-
-    // 储存线程
-    std::vector<std::thread> thread_container;
-
-    // search
-    for (int i = 0; i < query_centroids.size(); i++)
-    {
-      std::vector<unsigned> tmp(K);
-      unsigned *tmp_ = tmp.data();
-      // 创建新线程进行聚类中心的搜索
-      // 在热点搜索过程中不会记录搜索请求
-      std::thread t_tmp(Search, std::ref(query_centroids[i]), 
-                          std::ref(parameters), 
-                          std::ref(tmp_), 
-                          std::ref(record_query_flag));
-      // 加入 container，以便后续释放
-      thread_container.push_back(std::move(t_tmp));
-    }
-    // 连接线程（等待 search 多线程全部结束）
-    for (int i = 0; i < thread_container.size(); i++)
-    {
-      thread_container[i].join();
-    }
-
-    auto end_identify = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff_identify = end_identify - start_identify;
-    std::cout << "identify hot points time: " << diff_identify.count() << "\n";
-
-    // 热点更新
-    auto start_update = std::chrono::high_resolution_clock::now();
-    update_hot_points();
-    auto end_update = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff_update = end_update - start_update;
-    std::cout << "update hot points time: " << diff_update.count() << "\n";
-
-    thread_container.clear();
-  }
-
 
   // @CS0522
   // 记录搜索请求
@@ -249,16 +203,12 @@ namespace efanna2e
   }
 
   // @CS0522
-  void IndexWADG::update_hot_points()
+  void IndexWADG::update_hot_points(std::vector<unsigned> &search_res)
   {
-    // 上锁
-    mtx_lru.lock();
-    for (int i = search_res.size() - 1; i >= 0; i--)
+    for (int i = search_res.size(); i >= 0; i--)
     {
       hot_points_lru->put(search_res[i]);
     }
-    // 解锁
-    mtx_lru.unlock();
   }
 
   // @CS0522
