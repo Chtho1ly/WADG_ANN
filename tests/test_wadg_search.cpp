@@ -74,7 +74,9 @@ int main(int argc, char **argv)
   // align the data before build query_load = efanna2e::data_align(query_load,
   // query_num, query_dim);
   // efanna2e::L2确定距离比较器，默认欧氏距离平方
-  efanna2e::IndexWADG index(dim, points_num, efanna2e::L2, nullptr);
+  // @CS0522
+  // 传入聚类中心数 K，用于初始化 IndexWADG 的成员变量
+  efanna2e::IndexWADG index(dim, points_num, efanna2e::L2, K, nullptr);
   index.Load(argv[3]);
   index.Set_data(data_load);
 
@@ -91,7 +93,7 @@ int main(int argc, char **argv)
     // @CS0522
     // 指向 vector 内部的指针
     unsigned *tmp_ = tmp.data();
-    index.Search(query_load + i * dim, paras, tmp_);
+    index.Search(query_load + i * dim, paras, tmp_, true);
     res.push_back(tmp);
   }
   auto e = std::chrono::high_resolution_clock::now();
