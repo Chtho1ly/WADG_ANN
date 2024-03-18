@@ -58,8 +58,12 @@ namespace efanna2e
         // @CS0522
         // 多线程
         // 用于热点识别和热点更新
+        /**
+         * old_query_list 用于复制一份 query_list，
+         * 防止 Search 和 get_cluster_centers 同时修改 query_list
+        */
         virtual void identify_and_update(
-            const float* query, 
+            std::vector<const float*> old_query_list, 
             const Parameters &parameters,
             unsigned* &indices,
             bool record_query_flag);
@@ -76,8 +80,11 @@ namespace efanna2e
         // @CS0522
         // "float *" -> "const float *"
         std::vector<const float *> query_list;      // 窗口内搜索请求记录
+        std::mutex mtx_query_list;
         // @CS0522
         std::vector<unsigned> search_res;     // 用于记录 K 个聚类结果的热点
+        std::mutex mtx_search_res;
+        int update_hot_points_count = 0;
     };
 }
 
