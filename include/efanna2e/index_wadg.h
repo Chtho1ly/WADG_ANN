@@ -44,12 +44,17 @@ namespace efanna2e
 
         virtual void Set_data(const float *x);
 
+        int get_update_hot_points_count()
+        {
+            return this->update_hot_points_count;
+        }
+
     protected:
         // 记录搜索请求
         // 若请求记录窗口已满则进行热点更新，并删除旧的记录
         virtual void record_query(const float *query);
         // 更新热点
-        virtual void update_hot_points();
+        virtual void update_hot_points(std::vector<std::vector<unsigned> > &search_res);
         // 通过K-means获取搜索请求的聚类中心
         virtual std::vector<float *> get_cluster_centers(
             std::vector<const float *> querys,
@@ -65,7 +70,6 @@ namespace efanna2e
         virtual void identify_and_update(
             std::vector<const float*> old_query_list, 
             const Parameters &parameters,
-            unsigned* &indices,
             bool record_query_flag);
 
     private:
@@ -81,9 +85,7 @@ namespace efanna2e
         // "float *" -> "const float *"
         std::vector<const float *> query_list;      // 窗口内搜索请求记录
         std::mutex mtx_query_list;
-        // @CS0522
-        std::vector<unsigned> search_res;     // 用于记录 K 个聚类结果的热点
-        std::mutex mtx_search_res;
+
         int update_hot_points_count = 0;
     };
 }
