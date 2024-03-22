@@ -1,0 +1,13 @@
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/src/CMakeFiles/efanna2e.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/src/CMakeFiles/efanna2e_s.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/src/CMakeFiles/edit_cache.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/src/CMakeFiles/rebuild_cache.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/tests/CMakeFiles/test_nsg_index.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/tests/CMakeFiles/test_nsg_search.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/tests/CMakeFiles/test_nsg_optimized_search.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/tests/CMakeFiles/test_wadg_search.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/tests/CMakeFiles/test_cal_top_K_precision.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/tests/CMakeFiles/edit_cache.dir
+/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug/tests/CMakeFiles/rebuild_cache.dir

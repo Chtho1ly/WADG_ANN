@@ -99,6 +99,8 @@ int main(int argc, char **argv)
   auto e = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> diff = e - s;
   std::cout << "search time: " << diff.count() << "\n";
+  // TODO print
+  std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
 
   save_result(argv[6], res);
 

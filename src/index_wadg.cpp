@@ -74,10 +74,12 @@ namespace efanna2e
                           bool record_query_flag)
   {
     // TODO print
-    std::cout << (record_query_flag ? "主 Search 开始" : "聚类中心 Search 开始") << std::endl;
+    // std::cout << (record_query_flag ? "主 Search 开始" : "聚类中心 Search 开始") << std::endl;
 
-    const unsigned L = parameters.Get<unsigned>("L_search");
-    const unsigned K = parameters.Get<unsigned>("K_search");
+    // const unsigned L = parameters.Get<unsigned>("L_search");
+    // const unsigned K = parameters.Get<unsigned>("K_search");
+      auto L = parameters.Get<unsigned>("L_search");
+      auto K = parameters.Get<unsigned>("K_search");
 
     std::vector<Neighbor> retset(L + 1);
     std::vector<unsigned> init_ids(L);
@@ -180,31 +182,20 @@ namespace efanna2e
       if (query_list.size() >= window_size)
       {
         // TODO print
-        std::cout << "Search 中进入到了 window_size 判断条件" << std::endl;
-        std::cout << "Search 中创建热点识别和热点更新线程" << std::endl;
+        // std::cout << "Search 中进入到了 window_size 判断条件" << std::endl;
+        // std::cout << "Search 中创建热点识别和热点更新线程" << std::endl;
         // 多线程热点识别和热点更新
         std::thread t_tmp(&IndexWADG::identify_and_update, this,  
-                    query_list, std::ref(parameters), std::ref(indices), false);
+                    query_list, std::ref(parameters), false);
         // 不能阻塞 Search 过程
         // 可能存在问题 Search 函数已经循环结束，热点识别还未结束
-        t_tmp.detach();
-        // t_tmp.join();
+        // t_tmp.detach();
+         t_tmp.join();
         // 清空 query_list
         query_list.clear();
         // TODO print
-        std::cout << "Search 中清空了 query_list" << std::endl;
+        // std::cout << "Search 中清空了 query_list" << std::endl;
       }
-    }
-    // 若 flag == false
-    // 热点识别和热点更新
-    else
-    {
-      // 上锁
-      mtx_search_res.lock();
-      // 本次搜索结果的最近的点作为热点之一
-      search_res.push_back(indices[0]);
-      // 解锁
-      mtx_search_res.unlock();
     }
   }
 
@@ -212,31 +203,34 @@ namespace efanna2e
   // @CS0522
   // 用于多线程的热点识别和热点更新
   void IndexWADG::identify_and_update(std::vector<const float*> old_query_list, 
-                                      const Parameters &parameters, 
-                                      unsigned* &indices, 
-                                      bool record_query_flag = false)
+                                      const Parameters &parameters,
+                                      bool record_query_flag)
   {
     // TODO print
-    std::cout << "新的线程 identify_and_update" << std::endl;
+    // std::cout << "新的线程 identify_and_update" << std::endl;
 
     //热点识别
     auto start_identify = std::chrono::high_resolution_clock::now();
     std::vector<float *> query_centroids = get_cluster_centers(old_query_list, parameters, query_list.size());
     // TODO print
-    std::cout << "K-Means 聚类结束" << std::endl;
+    // std::cout << "K-Means 聚类结束" << std::endl;
 
-    const unsigned K = parameters.Get<unsigned>("K_search");
+    // const unsigned K = parameters.Get<unsigned>("K_search");
+    auto K = parameters.Get<unsigned>("K_search");
 
     // 储存线程
     std::vector<std::thread> thread_container;
 
     // search
     // TODO print
-    std::cout << "热点识别过程中聚类中心搜索开始" << std::endl;
+    // std::cout << "热点识别过程中聚类中心搜索开始" << std::endl;
+    // 保存搜索聚类中心的所有搜索结果
+    std::vector<std::vector<unsigned> > search_res;
     for (int i = 0; i < query_centroids.size(); i++)
     {
       std::vector<unsigned> tmp(K);
-      unsigned *tmp_ = tmp.data();
+      search_res.push_back(tmp);
+      unsigned *tmp_ = search_res[search_res.size() - 1].data();
       // 创建新线程进行聚类中心的搜索
       // 在热点搜索过程中不会记录搜索请求
       std::thread t_tmp(&IndexWADG::Search, this, std::ref(query_centroids[i]), 
@@ -253,23 +247,22 @@ namespace efanna2e
     }
 
     // TODO print
-    std::cout << "聚类中心搜索线程全部连接且结束" << std::endl;
+    // std::cout << "聚类中心搜索线程全部连接且结束" << std::endl;
 
     auto end_identify = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff_identify = end_identify - start_identify;
-    std::cout << "identify hot points time: " << diff_identify.count() << "\n";
+    // TODO print
+    // std::cout << "identify hot points time: " << diff_identify.count() << "\n";
 
     // 热点更新
     auto start_update = std::chrono::high_resolution_clock::now();
-    update_hot_points();
+    update_hot_points(search_res);
     auto end_update = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff_update = end_update - start_update;
-    std::cout << "update hot points time: " << diff_update.count() << "\n";
+    // TODO print
+    // std::cout << "update hot points time: " << diff_update.count() << "\n";
 
     // thread_container.clear();
-
-    // TODO print
-    std::cout << "更新热点次数: " << update_hot_points_count << std::endl;
   }
 
 
@@ -288,23 +281,16 @@ namespace efanna2e
   }
 
   // @CS0522
-  void IndexWADG::update_hot_points()
+  void IndexWADG::update_hot_points(std::vector<std::vector<unsigned> > &search_res)
   {
     // 上锁
     mtx_lru.lock();
     for (int i = search_res.size() - 1; i >= 0; i--)
     {
-      hot_points_lru->put(search_res[i]);
+      hot_points_lru->put(search_res[i][0]);
     }
     // 解锁
     mtx_lru.unlock();
-
-    // 上锁
-    mtx_search_res.lock();
-    // 清空 search_res
-    search_res.clear();
-    // 解锁
-    mtx_search_res.unlock();
 
     update_hot_points_count += 1;
   }
@@ -319,14 +305,15 @@ namespace efanna2e
       unsigned num)
   {
     // TODO print
-    std::cout << "identify_and update 中进入到了 get_cluster_centers" << std::endl; 
+    // std::cout << "identify_and update 中进入到了 get_cluster_centers" << std::endl;
     const unsigned K = parameters.Get<unsigned>("K_search");
 
     // 调用 dkm 库
     // dkm 接收的数据格式修改为 std::vector<std::vector<T>>
     // 需要先将 const float* query 转化为 std::vector
     int querys_num = querys.size();
-    std::cout << "querys_num: " << querys_num << std::endl;
+    // TODO print
+    // std::cout << "querys_num: " << querys_num << std::endl;
     std::vector<std::vector<float> > querys_in_vector(querys_num, std::vector<float>(dimension_));
     for (int i = 0; i < querys_num; i++)
     {
