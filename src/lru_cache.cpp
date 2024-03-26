@@ -24,6 +24,11 @@ namespace efanna2e
         return this->cache.size();
     }
 
+    std::vector<unsigned> LRUCache::get_cache()
+    {
+        return this->cache;
+    }
+
     void LRUCache::add_to_head(unsigned id)
     {
         if (this->cache.size() < this->capacity)

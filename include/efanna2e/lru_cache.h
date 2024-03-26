@@ -39,7 +39,14 @@ namespace efanna2e
              * @msg: get the current size of LRU queue
              * @return {unsigned}: size
              */
-            unsigned get_size(); 
+            unsigned get_size();
+
+            /**
+             * @name: get_cache
+             * @msg: get the cache of LRU queue
+             * @return {unsigned}: cache
+             */
+             std::vector<unsigned> get_cache();
 
             /**
              * @name: add_to_head

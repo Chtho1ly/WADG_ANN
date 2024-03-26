@@ -4,6 +4,7 @@
  * @Description: implement of IndexWADG class
  */
 
+#include <map>
 #include "efanna2e/index_wadg.h"
 // k-means 聚类库，性能好
 #include "efanna2e/dkm.hpp"
@@ -82,22 +83,31 @@ namespace efanna2e
       auto K = parameters.Get<unsigned>("K_search");
 
     std::vector<Neighbor> retset(L + 1);
-    std::vector<unsigned> init_ids(L);
+     std::vector<unsigned> init_ids(L);
     boost::dynamic_bitset<> flags{nd_, 0};
 
-    // 从 LRU 缓存中选取离搜索目标最近的 L 个点作为初始队列 init_ids
-    unsigned tmp_l = 0;
+    // TODO 从 LRU 缓存中选取离搜索目标最近的 L 个点作为初始队列 init_ids
+    // 不在 LRU 内部进行排序，因为需要 index->distance_
     // 上锁
     mtx_lru.lock();
-    for (; tmp_l < L && tmp_l < hot_points_lru->get_size(); tmp_l++)
-    {
-      // LRU 队列 get 后会移至 LRU 头部，所以 index 会变
-      // 倒序加入
-      init_ids[L - tmp_l - 1] = hot_points_lru->get(L - 1);
-      flags[init_ids[tmp_l]] = true;
-    }
+    // 拷贝一份 LRU cache
+    std::vector<unsigned> lru_copy = hot_points_lru->get_cache();
     // 解锁
     mtx_lru.unlock();
+    // 对 lru_copy 进行自定义排序（按照距离搜索目标最近）
+    std::sort(lru_copy.begin(), lru_copy.end(), [this, query](unsigned a, unsigned b) -> bool {
+        return (distance_->compare(data_ + dimension_ * a, query, (unsigned)dimension_)
+                <
+                distance_->compare(data_ + dimension_ * b, query, (unsigned)dimension_));
+    });
+
+    // 选取 lru_copy 前 L 个点
+    unsigned tmp_l = 0;
+    for (; tmp_l < L && tmp_l < lru_copy.size(); tmp_l++)
+    {
+      init_ids[tmp_l] = lru_copy[tmp_l];
+      flags[init_ids[tmp_l]] = true;
+    }
 
     // 不足 L 个则随机选取节点，直至 init_ids 包括 L 个节点
     while (tmp_l < L)
@@ -111,6 +121,13 @@ namespace efanna2e
       init_ids[tmp_l] = id;
       tmp_l++;
     }
+
+    // TODO 将初始队列中的第一个节点放到 LRU 缓存头部
+    // lock
+    mtx_lru.lock();
+    hot_points_lru->put(init_ids[0]);
+    // unlock
+    mtx_lru.unlock();
 
     // 将 init_ids 中的节点放入 retset 作为候选节点集
     for (unsigned i = 0; i < init_ids.size(); i++)
@@ -189,8 +206,8 @@ namespace efanna2e
                     query_list, std::ref(parameters), false);
         // 不能阻塞 Search 过程
         // 可能存在问题 Search 函数已经循环结束，热点识别还未结束
-        // t_tmp.detach();
-         t_tmp.join();
+         t_tmp.detach();
+//         t_tmp.join();
         // 清空 query_list
         query_list.clear();
         // TODO print
@@ -287,6 +304,7 @@ namespace efanna2e
     mtx_lru.lock();
     for (int i = search_res.size() - 1; i >= 0; i--)
     {
+      // 每次搜索结果中首个元素应该就是距离最近的点
       hot_points_lru->put(search_res[i][0]);
     }
     // 解锁
