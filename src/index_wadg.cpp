@@ -79,11 +79,11 @@ namespace efanna2e
 
     // const unsigned L = parameters.Get<unsigned>("L_search");
     // const unsigned K = parameters.Get<unsigned>("K_search");
-      auto L = parameters.Get<unsigned>("L_search");
-      auto K = parameters.Get<unsigned>("K_search");
+    auto L = parameters.Get<unsigned>("L_search");
+    auto K = parameters.Get<unsigned>("K_search");
 
     std::vector<Neighbor> retset(L + 1);
-     std::vector<unsigned> init_ids(L);
+    std::vector<unsigned> init_ids(L);
     boost::dynamic_bitset<> flags{nd_, 0};
 
     // TODO 从 LRU 缓存中选取离搜索目标最近的 L 个点作为初始队列 init_ids
@@ -202,12 +202,12 @@ namespace efanna2e
         // std::cout << "Search 中进入到了 window_size 判断条件" << std::endl;
         // std::cout << "Search 中创建热点识别和热点更新线程" << std::endl;
         // 多线程热点识别和热点更新
-        std::thread t_tmp(&IndexWADG::identify_and_update, this,  
+        std::thread t_tmp(&IndexWADG::identify_and_update, this,
                     query_list, std::ref(parameters), false);
         // 不能阻塞 Search 过程
         // 可能存在问题 Search 函数已经循环结束，热点识别还未结束
-         t_tmp.detach();
-//         t_tmp.join();
+        t_tmp.detach();
+        // t_tmp.join();
         // 清空 query_list
         query_list.clear();
         // TODO print
@@ -235,9 +235,6 @@ namespace efanna2e
     // const unsigned K = parameters.Get<unsigned>("K_search");
     auto K = parameters.Get<unsigned>("K_search");
 
-    // 储存线程
-    std::vector<std::thread> thread_container;
-
     // search
     // TODO print
     // std::cout << "热点识别过程中聚类中心搜索开始" << std::endl;
@@ -250,18 +247,17 @@ namespace efanna2e
       unsigned *tmp_ = search_res[search_res.size() - 1].data();
       // 创建新线程进行聚类中心的搜索
       // 在热点搜索过程中不会记录搜索请求
-      std::thread t_tmp(&IndexWADG::Search, this, std::ref(query_centroids[i]), 
-                          std::ref(parameters), 
-                          std::ref(tmp_), 
-                          std::ref(record_query_flag));
-      // 加入 container，以便后续释放
-      thread_container.push_back(std::move(t_tmp));
+      boost::asio::post(tp, boost::bind(&IndexWADG::Search, this, std::ref(query_centroids[i]),
+                            std::ref(parameters),
+                            std::ref(tmp_),
+                            std::ref(record_query_flag)));
+      // std::thread t_tmp(&IndexWADG::Search, this, std::ref(query_centroids[i]),
+      //                    std::ref(parameters),
+      //                    std::ref(tmp_),
+      //                    std::ref(record_query_flag));
     }
     // 连接线程（等待 聚类中心search 多线程全部结束）
-    for (int i = 0; i < thread_container.size(); i++)
-    {
-      thread_container[i].join();
-    }
+    tp.join();
 
     // TODO print
     // std::cout << "聚类中心搜索线程全部连接且结束" << std::endl;
@@ -278,8 +274,6 @@ namespace efanna2e
     std::chrono::duration<double> diff_update = end_update - start_update;
     // TODO print
     // std::cout << "update hot points time: " << diff_update.count() << "\n";
-
-    // thread_container.clear();
   }
 
 

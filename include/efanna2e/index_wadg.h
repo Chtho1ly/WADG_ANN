@@ -13,12 +13,23 @@
 #include <string>
 #include <sstream>
 #include <boost/dynamic_bitset.hpp>
+// @CS0522
+// 使用 boost 线程池库
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 #include <stack>
 #include <mutex>
 #include <thread>
 
 namespace efanna2e
 {
+    // @CS0522
+    // 线程池
+    // 用于热点识别和热点更新中的多个聚类中心搜索
+    // 主search 中的热点识别和热点更新的多线程没有使用线程池
+    // 主search 使用线程池，会导致主search 等待线程池内的线程执行结束才继续执行
+    // TODO 设定线程池大小
+    static boost::asio::thread_pool tp(8);
 
     class IndexWADG : public IndexNSG
     {
