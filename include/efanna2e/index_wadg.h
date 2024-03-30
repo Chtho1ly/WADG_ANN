@@ -17,6 +17,7 @@
 // 使用 boost 线程池库
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <queue>
 #include <stack>
 #include <mutex>
 #include <thread>
