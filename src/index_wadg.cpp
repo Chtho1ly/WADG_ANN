@@ -90,28 +90,61 @@ namespace efanna2e
     // 不在 LRU 内部进行排序，因为需要 index->distance_
     // 上锁
     mtx_lru.lock();
-    // 拷贝一份 LRU cache
+    // TODO 需要额外拷贝？可以直接 lru->get(index)？
     std::vector<unsigned> lru_copy = hot_points_lru->get_cache();
     // 解锁
     mtx_lru.unlock();
-    // 对 lru_copy 进行自定义排序（按照距离搜索目标最近）
-    std::sort(lru_copy.begin(), lru_copy.end(), [this, query](unsigned a, unsigned b) -> bool {
+
+    // 求前 L 个最小元素，构建容量为 L 的大顶堆
+    // 选取 L 与 lru.size 中更小的那个
+    unsigned pq_size = (L < lru_copy.size()) ? L : lru_copy.size();
+    // 函数指针
+    auto cmp = [this, query](unsigned a, unsigned b) -> bool {
         return (distance_->compare(data_ + dimension_ * a, query, (unsigned)dimension_)
                 <
                 distance_->compare(data_ + dimension_ * b, query, (unsigned)dimension_));
-    });
-
-    // 选取 lru_copy 前 L 个点
-    unsigned tmp_l = 0;
-    for (; tmp_l < L && tmp_l < lru_copy.size(); tmp_l++)
+    };
+    // 大顶堆
+    std::priority_queue<unsigned, std::vector<unsigned>, decltype(cmp)> pq(cmp);
+    // 先往大顶堆压入 pq_size 个元素
+    for (unsigned i = 0; i < pq_size; ++i)
     {
-      init_ids[tmp_l] = lru_copy[tmp_l];
-      flags[init_ids[tmp_l]] = true;
+        pq.push(lru_copy[i]);
+    }
+    // 循环比较剩余元素
+    for (unsigned j = pq_size; j < lru_copy.size(); ++j)
+    {
+        // 如果当前的元素 a 小于大顶堆的最大元素 b，说明 a 要入，b 要出
+        if (distance_->compare(data_ + dimension_ * lru_copy[j], query, (unsigned)dimension_)
+            <
+            distance_->compare(data_ + dimension_ * pq.top(), query, (unsigned)dimension_))
+        {
+            pq.pop();
+            pq.push(lru_copy[j]);
+        }
     }
 
-    // 不足 L 个则随机选取节点，直至 init_ids 包括 L 个节点
-    while (tmp_l < L)
+    // 从大顶堆中选取所有点（点的个数可能小于 L）
+    unsigned tmp_l = 0;
+    while (!pq.empty() && tmp_l < pq_size)
     {
+        // 大顶堆中的元素倒序加入
+        init_ids[pq_size - tmp_l - 1] = pq.top();
+        pq.pop();
+
+        flags[init_ids[pq_size - tmp_l - 1]] = true;
+        tmp_l++;
+    }
+
+    // for (; tmp_l < L && tmp_l < lru_copy.size(); tmp_l++)
+    // {
+    //  init_ids[tmp_l] = lru_copy[tmp_l];
+    //  flags[init_ids[tmp_l]] = true;
+    // }
+
+    // 不足 L 个则随机选取节点，直至 init_ids 包括 L 个节点
+     while (tmp_l < L)
+     {
       unsigned id = rand() % nd_;
       if (flags[id])
       {
@@ -120,7 +153,7 @@ namespace efanna2e
       flags[id] = true;
       init_ids[tmp_l] = id;
       tmp_l++;
-    }
+     }
 
     // TODO 将初始队列中的第一个节点放到 LRU 缓存头部
     // lock
@@ -128,6 +161,12 @@ namespace efanna2e
     hot_points_lru->put(init_ids[0]);
     // unlock
     mtx_lru.unlock();
+
+    // TODO print the distance between init_ids[0] and search target
+    std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
+    std::cout << "distance: " <<
+    distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
+    << std::endl;
 
     // 将 init_ids 中的节点放入 retset 作为候选节点集
     for (unsigned i = 0; i < init_ids.size(); i++)

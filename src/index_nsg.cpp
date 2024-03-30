@@ -466,6 +466,12 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     tmp_l++;
   }
 
+    // TODO print the distance between init_ids[0] and search target
+    std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
+    std::cout << "distance: " <<
+              distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
+              << std::endl;
+
   // 将init_ids中的节点放入retset作为候选节点集
   for (unsigned i = 0; i < init_ids.size(); i++) {
     unsigned id = init_ids[i];
