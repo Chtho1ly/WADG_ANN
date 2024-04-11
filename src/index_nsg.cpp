@@ -442,6 +442,9 @@ void IndexNSG::Build(size_t n, const float *data, const Parameters &parameters) 
 
 void IndexNSG::Search(const float *query, const float *x, size_t K,
                       const Parameters &parameters, unsigned *indices) {
+  // TODO print
+  auto s = std::chrono::high_resolution_clock::now();
+
   const unsigned L = parameters.Get<unsigned>("L_search");
   data_ = x;
   std::vector<Neighbor> retset(L + 1);
@@ -466,11 +469,13 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     tmp_l++;
   }
 
-    // TODO print the distance between init_ids[0] and search target
-    std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
-    std::cout << "distance: " <<
-              distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
-              << std::endl;
+  // TODO print the distance between init_ids[0] and search target
+  /*
+  std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
+  std::cout << "distance: " <<
+            distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
+            << std::endl;
+  */
 
   // 将init_ids中的节点放入retset作为候选节点集
   for (unsigned i = 0; i < init_ids.size(); i++) {
@@ -513,6 +518,11 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
   for (size_t i = 0; i < K; i++) {
     indices[i] = retset[i].id;
   }
+
+  // TODO print
+  auto e = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> diff = e - s;
+  // std::cout << "search time of one time: " << diff.count() << std::endl;
 }
 
 void IndexNSG::SearchWithOptGraph(const float *query, size_t K,
