@@ -101,6 +101,13 @@ namespace efanna2e
         return get_id;
     }
 
+    unsigned LRUCache::visit(unsigned index)
+    {
+        // 不移到 head，单纯访问
+        // 为了选取距离搜索目标最近的 L 个点，减少复制开销
+        return this->cache[index];
+    }
+
     void LRUCache::print_lru_cache()
     {
         for (unsigned i = 0; i < this->cache.size(); i++)

@@ -30,16 +30,19 @@ namespace efanna2e
       : IndexNSG(dimension, n, m, initializer) 
       {
         // TODO 初始化 max_hot_points_num, 该值应该大于 K
-        max_hot_points_num = K * 2;
+        max_hot_points_num = K;
         // TODO 初始化 window_size 搜索请求记录窗口大小
+        // window_size >= cluster_num
         window_size = K;
         // TODO 初始化 cluster_num 聚类中心数
-        cluster_num = K;
+        cluster_num = K / 20;
         // TODO print
-        std::cout << "max_hot_points_num: " << max_hot_points_num << std::endl 
+        /*
+        std::cout << "max_hot_points_num: " << max_hot_points_num << std::endl
                   << "window_size: " << window_size << std::endl
                   << "cluster_num: " << cluster_num << std::endl
-                  << "K: " << K << std::endl; 
+                  << "K: " << K << std::endl;
+        */
         // 初始化 LRU 队列
         // (key, value): (下标, 有效热点 id)
         hot_points_lru = new LRUCache(max_hot_points_num);
@@ -74,6 +77,7 @@ namespace efanna2e
   void IndexWADG::Search(const float *query, const Parameters &parameters, unsigned*& indices,
                           bool record_query_flag)
   {
+    // auto s = std::chrono::high_resolution_clock::now();
     // TODO print
     // std::cout << (record_query_flag ? "主 Search 开始" : "聚类中心 Search 开始") << std::endl;
 
@@ -89,15 +93,15 @@ namespace efanna2e
     // TODO 从 LRU 缓存中选取离搜索目标最近的 L 个点作为初始队列 init_ids
     // 不在 LRU 内部进行排序，因为需要 index->distance_
     // 上锁
-    mtx_lru.lock();
-    // TODO 需要额外拷贝？可以直接 lru->get(index)？
-    std::vector<unsigned> lru_copy = hot_points_lru->get_cache();
+    // mtx_lru.lock();
+    // std::vector<unsigned> lru_copy = hot_points_lru->get_cache();
     // 解锁
-    mtx_lru.unlock();
+    // mtx_lru.unlock();
 
     // 求前 L 个最小元素，构建容量为 L 的大顶堆
     // 选取 L 与 lru.size 中更小的那个
-    unsigned pq_size = (L < lru_copy.size()) ? L : lru_copy.size();
+    // unsigned pq_size = (L < lru_copy.size()) ? L : lru_copy.size();
+      unsigned pq_size = (L < hot_points_lru->get_size()) ? L : hot_points_lru->get_size();
     // 函数指针
     auto cmp = [this, query](unsigned a, unsigned b) -> bool {
         return (distance_->compare(data_ + dimension_ * a, query, (unsigned)dimension_)
@@ -107,22 +111,35 @@ namespace efanna2e
     // 大顶堆
     std::priority_queue<unsigned, std::vector<unsigned>, decltype(cmp)> pq(cmp);
     // 先往大顶堆压入 pq_size 个元素
+    // 上锁
+    mtx_lru.lock();
     for (unsigned i = 0; i < pq_size; ++i)
     {
-        pq.push(lru_copy[i]);
+        // pq.push(lru_copy[i]);
+        pq.push(hot_points_lru->visit(i));
     }
     // 循环比较剩余元素
-    for (unsigned j = pq_size; j < lru_copy.size(); ++j)
+    // for (unsigned j = pq_size; j < lru_copy.size(); ++j)
+    for (unsigned j = pq_size; j < hot_points_lru->get_size(); ++j)
     {
         // 如果当前的元素 a 小于大顶堆的最大元素 b，说明 a 要入，b 要出
-        if (distance_->compare(data_ + dimension_ * lru_copy[j], query, (unsigned)dimension_)
+        // if (distance_->compare(data_ + dimension_ * lru_copy[j], query, (unsigned)dimension_)
+        //     <
+        //     distance_->compare(data_ + dimension_ * pq.top(), query, (unsigned)dimension_))
+        // {
+        //     pq.pop();
+        //     pq.push(lru_copy[j]);
+        // }
+        if (distance_->compare(data_ + dimension_ * hot_points_lru->visit(j), query, (unsigned)dimension_)
             <
             distance_->compare(data_ + dimension_ * pq.top(), query, (unsigned)dimension_))
         {
             pq.pop();
-            pq.push(lru_copy[j]);
+            pq.push(hot_points_lru->visit(j));
         }
     }
+    // 解锁
+    mtx_lru.unlock();
 
     // 从大顶堆中选取所有点（点的个数可能小于 L）
     unsigned tmp_l = 0;
@@ -163,10 +180,15 @@ namespace efanna2e
     mtx_lru.unlock();
 
     // TODO print the distance between init_ids[0] and search target
-    std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
-    std::cout << "distance: " <<
-    distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
-    << std::endl;
+    /*
+    if (record_query_flag == true)
+    {
+        std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
+        std::cout << "distance: " <<
+                  distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
+                  << std::endl;
+    }
+    */
 
     // 将 init_ids 中的节点放入 retset 作为候选节点集
     for (unsigned i = 0; i < init_ids.size(); i++)
@@ -253,6 +275,10 @@ namespace efanna2e
         // std::cout << "Search 中清空了 query_list" << std::endl;
       }
     }
+
+    // auto e = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> diff = e - s;
+    // std::cout << "search time of one time: " << diff.count() << std::endl;
   }
 
   
@@ -266,7 +292,7 @@ namespace efanna2e
     // std::cout << "新的线程 identify_and_update" << std::endl;
 
     //热点识别
-    auto start_identify = std::chrono::high_resolution_clock::now();
+    // auto start_identify = std::chrono::high_resolution_clock::now();
     std::vector<float *> query_centroids = get_cluster_centers(old_query_list, parameters, query_list.size());
     // TODO print
     // std::cout << "K-Means 聚类结束" << std::endl;
@@ -301,16 +327,16 @@ namespace efanna2e
     // TODO print
     // std::cout << "聚类中心搜索线程全部连接且结束" << std::endl;
 
-    auto end_identify = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff_identify = end_identify - start_identify;
+    // auto end_identify = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> diff_identify = end_identify - start_identify;
     // TODO print
     // std::cout << "identify hot points time: " << diff_identify.count() << "\n";
 
     // 热点更新
-    auto start_update = std::chrono::high_resolution_clock::now();
+    // auto start_update = std::chrono::high_resolution_clock::now();
     update_hot_points(search_res);
-    auto end_update = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff_update = end_update - start_update;
+    // auto end_update = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> diff_update = end_update - start_update;
     // TODO print
     // std::cout << "update hot points time: " << diff_update.count() << "\n";
   }
@@ -326,7 +352,7 @@ namespace efanna2e
     query_list.push_back(query);
     // 解锁
     mtx_query_list.unlock();
-    // print
+    // TODO print
     // std::cout << "query_list size: " << query_list.size() << std::endl;
   }
 
@@ -383,11 +409,11 @@ namespace efanna2e
     // 返回的结果是一个Tuple   
     //Tuple[0]: 返回的是数据集聚类中心的列表 (长度为 K)   
     //Tuple[1]: 返回的是输入数据集对应的标签 (归属于哪一个点)
-    auto cluster_data = dkm::kmeans_lloyd(querys_in_vector, K);
+    auto cluster_data = dkm::kmeans_lloyd(querys_in_vector, cluster_num);
     std::vector<std::vector<float> > cluster_centers = std::get<0>(cluster_data);
     // 将 std::array 转化回 float *
     std::vector<float *> cluster_centers_result;
-    for (int i = 0; i < K; i++)
+    for (int i = 0; i < cluster_num; i++)
     {
       float* cluster_center = new float[dimension_];
       for (int j = 0; j < dimension_; j++)

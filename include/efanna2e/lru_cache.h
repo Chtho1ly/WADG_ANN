@@ -96,6 +96,15 @@ namespace efanna2e
             unsigned get(unsigned index);
 
             /**
+            * @name: visit
+            * @msg: visit the id at the index position in LRU queue
+            *       without promoting it to the front
+            * @param {unsigned} index: target position
+            * @return {*}
+            */
+            unsigned visit(unsigned index);
+
+            /**
              * @name: print_lru_cache
              * @msg: print the LRU queue
              * @return {*}

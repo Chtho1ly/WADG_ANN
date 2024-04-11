@@ -87,6 +87,8 @@ int main(int argc, char **argv)
 
   auto s = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<unsigned>> res;
+  // TODO print query_num
+  // std::cout << "query_num: " << query_num << std::endl;
   for (unsigned i = 0; i < query_num; i++)
   {
     std::vector<unsigned> tmp(K);

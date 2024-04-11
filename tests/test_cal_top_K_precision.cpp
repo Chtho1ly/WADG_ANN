@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
     {
         if (data1[i].size() < K || data2[i].size() < K)
         {
+            std::cout << "文件1向量数量为: " << data1[i].size() << ", 文件2向量数量为: " << data2[i].size() << std::endl;
             std::cout << "在第 " << i + 1 << " 行，文件" << (int)((data1[i].size() < K) ? 1 : 2) << "中的向量数量为" << data1[i].size() << "小于K。" << std::endl;
             return -1;
         }
