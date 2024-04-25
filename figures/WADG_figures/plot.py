@@ -52,7 +52,7 @@ class Plot:
 
 
     # 对比平滑曲线图
-    def comparison_line_chart(self):
+    def comparison_curve_chart(self):
         x1 = self.nsg_pre
         x2 = self.wadg_pre
 
@@ -98,11 +98,61 @@ class Plot:
         plt.show()
 
 
+    # 对比折线图
+    def comparison_line_chart(self):
+        x1 = self.nsg_pre
+        x2 = self.wadg_pre
+
+        y1 = self.nsg_qps
+        y2 = self.wadg_qps
+
+        # x轴标题
+        plt.xlabel('Precision@100')
+        plt.xlim(0.96, 1)
+        # y轴标题
+        plt.ylabel('Queries per Second')
+        # 绘制平滑曲线图，添加数据点，设置点的大小
+        plt.plot(x1, y1, marker = 'o')  
+        plt.plot(x2, y2, marker = 's')
+        # 设置曲线名称
+        plt.legend(['NSG', 'WADG'])
+        plt.grid(linestyle = '--', alpha = 0.5)
+        plt.title(f'SIFT, query_num={self.query_num}, wadg_args={self.wadg_parmeters}, Top-K={self.top_k}')
+
+        plt.show()
+
+
+    # 对比柱状图
+    def comparision_histogram(self):
+        base = ['1', '2', '3']
+        x1 = [5, 10, 20]
+        x2 = [6, 8, 15]
+
+        # 设置字体
+        plt.rcParams['font.sans-serif'] = ['Times New Roman']
+        # 绘制柱状图
+        # x轴标题
+        # plt.xlabel('SIFT')  
+        # y轴标题
+        plt.ylabel('Avg Search Time') 
+        base_ticks = range(len(base))
+        plt.bar(base_ticks, x1, width = 0.1, label = 'NSG')
+        plt.bar([i + 0.1 for i in base_ticks], x2, width = 0.1, label = 'WADG')
+        plt.legend(['NSG', 'WADG'])
+        # 修改 base 刻度
+        plt.xticks(base_ticks, base)
+        # 添加网格显示
+        plt.grid(linestyle = '--', alpha = 0.5)
+        #5、标题
+        plt.title("SIFT Average Search Time Comparision")
+        plt.show()
+
+
 if __name__ == "__main__":
     """
     query_num:
     wadg_parameters: hot_point_num - window_size - cluster_num
     """
     p = Plot(10000, "2K-2K-K", 100, './nsg.csv', './wadg.csv')
+    # p.comparison_curve_chart()
     p.comparison_line_chart()
-    # p.comparision_histogram()
