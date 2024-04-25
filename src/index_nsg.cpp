@@ -460,6 +460,8 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     flags[init_ids[tmp_l]] = true;
   }
 
+  // tmp_l = 50
+
   // 导航点邻居不足L个则随机选取节点，直至init_ids包括L个节点
   while (tmp_l < L) {
     unsigned id = rand() % nd_;

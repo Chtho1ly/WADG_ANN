@@ -24,6 +24,8 @@ class IndexNSG : public Index {
   virtual void Save(const char *filename)override;
   virtual void Load(const char *filename)override;
 
+  // @CS0522
+  unsigned get_ep_() { return this->ep_; }
 
   virtual void Build(size_t n, const float *data, const Parameters &parameters) override;
 

@@ -79,6 +79,7 @@ int main(int argc, char **argv)
   efanna2e::IndexWADG index(dim, points_num, efanna2e::L2, K, nullptr);
   index.Load(argv[3]);
   index.Set_data(data_load);
+  index.Set_lru();
 
   efanna2e::Parameters paras;
   paras.Set<unsigned>("L_search", L);
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
     // @CS0522
     // 指向 vector 内部的指针
     unsigned *tmp_ = tmp.data();
-    index.Search(query_load + i * dim, paras, tmp_, true);
+    index.Search(query_load + i * dim, paras, tmp_, false);
     res.push_back(tmp);
   }
   auto e = std::chrono::high_resolution_clock::now();

@@ -56,6 +56,9 @@ namespace efanna2e
 
         virtual void Set_data(const float *x);
 
+        // 需要在读取 final_graph 之后才能把导航点全部邻居放入 LRU 中
+        virtual void Set_lru();
+
         int get_update_hot_points_count()
         {
             return this->update_hot_points_count;

@@ -1,0 +1,146 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.8"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "src",
+					"jsonFile" : "directory-src-Debug-b6cf2213fc5053b67c22.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				},
+				{
+					"build" : "tests",
+					"jsonFile" : "directory-tests-Debug-b01f6abb0ab61427ef3b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "tests",
+					"targetIndexes" : 
+					[
+						2,
+						3,
+						4,
+						5,
+						6
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2
+					],
+					"name" : "efanna2e",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "efanna2e::@145eef247bfb46b6828c",
+					"jsonFile" : "target-efanna2e-Debug-8818a5d3f6f45b166737.json",
+					"name" : "efanna2e",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "efanna2e_s::@145eef247bfb46b6828c",
+					"jsonFile" : "target-efanna2e_s-Debug-ca1aa478b613a13eef88.json",
+					"name" : "efanna2e_s",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "test_cal_top_K_precision::@a44f0ac069e85531cdee",
+					"jsonFile" : "target-test_cal_top_K_precision-Debug-978ada9547e41ec8ce2f.json",
+					"name" : "test_cal_top_K_precision",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "test_nsg_index::@a44f0ac069e85531cdee",
+					"jsonFile" : "target-test_nsg_index-Debug-764d16396491de1c879e.json",
+					"name" : "test_nsg_index",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "test_nsg_optimized_search::@a44f0ac069e85531cdee",
+					"jsonFile" : "target-test_nsg_optimized_search-Debug-2961e268c0c61265f157.json",
+					"name" : "test_nsg_optimized_search",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "test_nsg_search::@a44f0ac069e85531cdee",
+					"jsonFile" : "target-test_nsg_search-Debug-e491587a7934afe7b290.json",
+					"name" : "test_nsg_search",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "test_wadg_search::@a44f0ac069e85531cdee",
+					"jsonFile" : "target-test_wadg_search-Debug-8bc4f81eee1cc0cbca92.json",
+					"name" : "test_wadg_search",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/frank/Workspace/ANN/Codes/WADG_ANN/cmake-build-debug",
+		"source" : "/home/frank/Workspace/ANN/Codes/WADG_ANN"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}
