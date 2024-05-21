@@ -34,7 +34,7 @@ namespace efanna2e
         // window_size >= cluster_num
         window_size = K;
         // 初始化 cluster_num 聚类中心数
-        // TODO 主要影响因素
+        // 主要影响因素
         cluster_num = K / 20;
       }
 
@@ -79,10 +79,9 @@ namespace efanna2e
     auto L = parameters.Get<unsigned>("L_search");
     auto K = parameters.Get<unsigned>("K_search");
 
-    // pq_size = init_ids.size = retset.size
     unsigned pq_size = (L < hot_points_lru->get_size()) ? L : hot_points_lru->get_size();
 
-    // 修改为链表
+    // retset 修改为链表
     Neighbors *retset = new Neighbors(L);
     std::vector<unsigned> init_ids;
     boost::dynamic_bitset<> flags{nd_, 0};
@@ -135,19 +134,7 @@ namespace efanna2e
     // unlock
     mtx_lru.unlock();
 
-    // TODO print the distance between init_ids[0] and search target
-    /*
-    if (record_query_flag == true)
-    {
-        std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
-        std::cout << "distance: " <<
-                  distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
-                  << std::endl;
-    }
-    */
-
     // 将 init_ids 中的节点放入 retset 作为候选节点集
-    // retset.size = init_ids.size = pq_size
     for (unsigned i = 0; i < init_ids.size(); i++)
     {
       unsigned id = init_ids[i];
@@ -185,8 +172,9 @@ namespace efanna2e
                 {
                     continue;
                 }
+                // TODO 修改为新建一个 temp 链表排序后与 retset 归并
                 Neighbor nn(id, dist, true);
-                auto r = InsertIntoPool(retset, nn);
+                auto r = InsertIntoPool_linklist(retset, nn);
 
                 if (r < np_index)
                 {
@@ -240,7 +228,7 @@ namespace efanna2e
 
 
 
-  // TODO TEST
+  // TEST
   void save_querys(std::string filename, std::vector<const float *> &results, unsigned d)
   {
       std::ofstream out(filename, std::ios::binary | std::ios::out);
@@ -310,15 +298,6 @@ namespace efanna2e
   {
     //热点识别
     std::vector<float *> query_centroids = get_cluster_centers(old_query_list, parameters, query_list.size());
-
-//    TODO TEST 搜索目标和聚类结果保存
-//    if (count <= 3)
-//    {
-//        efanna2e::save_querys("/home/frank/Workspace/ANN/Codes/visual_dataset/query_" + std::to_string(count) +  ".fvecs",
-//                      old_query_list, dimension_);
-//        efanna2e::save_clusters("/home/frank/Workspace/ANN/Codes/visual_dataset/cluster_" + std::to_string(count) +  ".fvecs",
-//                                query_centroids, dimension_);
-//    }
 
     auto K = parameters.Get<unsigned>("K_search");
 
@@ -409,18 +388,6 @@ namespace efanna2e
     auto cluster_data = dkm::kmeans_lloyd(querys_in_vector, cluster_num);
     std::vector<std::vector<float> > cluster_centers = std::get<0>(cluster_data);
     auto labels = std::get<1>(cluster_data);
-
-//    TODO TEST 搜索目标和聚类结果保存
-//    if (count <= 3)
-//    {
-//        for (int i = 0; i < labels.size(); i++)
-//        {
-//            std::cout << labels[i] << " ";
-//        }
-//        std::cout << std::endl;
-//        efanna2e::save_labels("/home/frank/Workspace/ANN/Codes/visual_dataset/labels_" + std::to_string(count) +  ".ivecs",
-//                                labels);
-//    }
 
     // 将 std::array 转化回 float *
     std::vector<float *> cluster_centers_result;

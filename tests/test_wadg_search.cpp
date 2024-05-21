@@ -44,6 +44,7 @@ void save_result(char *filename, std::vector<std::vector<unsigned>> &results)
   out.close();
 }
 
+
 int main(int argc, char **argv)
 {
   if (argc != 7)
@@ -88,22 +89,37 @@ int main(int argc, char **argv)
 
   auto s = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<unsigned>> res;
-  // TODO print query_num
-  // std::cout << "query_num: " << query_num << std::endl;
+
   for (unsigned i = 0; i < query_num; i++)
   {
     std::vector<unsigned> tmp(K);
     // @CS0522
     // 指向 vector 内部的指针
     unsigned *tmp_ = tmp.data();
-    index.Search(query_load + i * dim, paras, tmp_, false);
+    index.Search(query_load + i * dim, paras, tmp_, true);
     res.push_back(tmp);
   }
   auto e = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> diff = e - s;
   std::cout << "search time: " << diff.count() << "\n";
-  // TODO print
+  // print update count
+  std::cout << "更新窗口次数: " << index.get_window_count() << std::endl;
   std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
+  // print try to enter retset points counts
+  std::cout << "主 Search 中尝试加入 retset 的点数量: " << std::endl;
+  auto counts = index.get_try_enter_retset_points_counts();
+  int total_counts = 0;
+  for (int i = 0; i < counts.size(); i++)
+  {
+    total_counts += counts[i];
+  }
+  std::cout << "Total(" << counts.size() << "): " << total_counts << std::endl;
+  // std::cout << "Each: " << std::endl;
+  // for (int i = 0; i < counts.size(); i++)
+  // {
+  //   std::cout << counts[i] << " ";
+  // }
+  // std::cout << std::endl;
 
   save_result(argv[6], res);
 

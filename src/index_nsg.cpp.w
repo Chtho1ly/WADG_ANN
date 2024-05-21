@@ -445,8 +445,8 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
 
   const unsigned L = parameters.Get<unsigned>("L_search");
   data_ = x;
-  std::vector<Neighbor> retset;
-  std::vector<unsigned> init_ids;
+  std::vector<Neighbor> retset(L + 1);
+  std::vector<unsigned> init_ids(L);
   boost::dynamic_bitset<> flags{nd_, 0};
   // std::mt19937 rng(rand());
   // GenRandom(rng, init_ids.data(), L, (unsigned) nd_);
@@ -454,41 +454,37 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
   // 将导航点的全部邻居放入init_ids
   unsigned tmp_l = 0;
   for (; tmp_l < L && tmp_l < final_graph_[ep_].size(); tmp_l++) {
-    // init_ids[tmp_l] = final_graph_[ep_][tmp_l];
-    // flags[init_ids[tmp_l]] = true;
-    init_ids.push_back(final_graph_[ep_][tmp_l]);
+    init_ids[tmp_l] = final_graph_[ep_][tmp_l];
     flags[init_ids[tmp_l]] = true;
   }
 
   // tmp_l = 50
 
   // 导航点邻居不足L个则随机选取节点，直至init_ids包括L个节点
-  // while (tmp_l < L) {
-  //   unsigned id = rand() % nd_;
-  //   if (flags[id]) continue;
-  //   flags[id] = true;
-  //   init_ids[tmp_l] = id;
-  //   tmp_l++;
-  // }
+  while (tmp_l < L) {
+    unsigned id = rand() % nd_;
+    if (flags[id]) continue;
+    flags[id] = true;
+    init_ids[tmp_l] = id;
+    tmp_l++;
+  }
 
   // 将init_ids中的节点放入retset作为候选节点集
   for (unsigned i = 0; i < init_ids.size(); i++) {
     unsigned id = init_ids[i];
     float dist =
         distance_->compare(data_ + dimension_ * id, query, (unsigned)dimension_);
-    // retset[i] = Neighbor(id, dist, true);
+    retset[i] = Neighbor(id, dist, true);
     // flags[id] = true;
-    retset.push_back(Neighbor(id, dist, true));
   }
 
-  // std::sort(retset.begin(), retset.begin() + L);
-  std::sort(retset.begin(), retset.end());
+  std::sort(retset.begin(), retset.begin() + L);
   // greedy search
   int k = 0;
   // 统计尝试加入 retset 的点的数量
   int try_enter_retset_points_count = 0;
   while (k < (int)L) {
-    int nk = (L < retset.size()) ? L : retset.size();
+    int nk = L;
 
     if (retset[k].flag) {
       retset[k].flag = false;
@@ -500,12 +496,11 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
         flags[id] = 1;
         float dist =
             distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-        if (dist >= retset[(L < retset.size() ? L : retset.size()) - 1].distance) continue;
+        if (dist >= retset[L - 1].distance) continue;
         // 统计尝试加入 retset 的点的数量
         ++try_enter_retset_points_count;
         Neighbor nn(id, dist, true);
-        // int r = InsertIntoPool(retset.data(), L, nn);
-        auto r = InsertIntoPool(retset, (L < retset.size()) ? L : retset.size(), nn);
+        int r = InsertIntoPool(retset.data(), L, nn);
 
         if (r < nk) nk = r;
       }
@@ -520,7 +515,6 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     indices[i] = retset[i].id;
   }
 
-  // 尝试加入 retset 的点的数量
   this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
 }
 

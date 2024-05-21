@@ -29,7 +29,7 @@ namespace efanna2e
     // 用于热点识别和热点更新中的多个聚类中心搜索
     // 主search 中的热点识别和热点更新的多线程没有使用线程池
     // 主search 使用线程池，会导致主search 等待线程池内的线程执行结束才继续执行
-    // TODO 设定线程池大小
+    // 设定线程池大小
     static boost::asio::thread_pool tp(8);
 
     class IndexWADG : public IndexNSG
@@ -43,7 +43,7 @@ namespace efanna2e
         // 记录历史查询请求并实现热点的更新
         // 与NSG相比，使用parameters传递k_search，并且将_data的初始化放在了Set_data函数中
         
-        /* TODO 暂时没想到一个好的解决办法，
+        /* 暂时没想到一个好的解决办法，
          * 来解决当 主Search 和 聚类Search 同时搜索时，
          * 如何判断哪个是主哪个是聚类的，
          * 使得聚类Search不能对query_list写而主Search可以。
@@ -62,6 +62,21 @@ namespace efanna2e
         int get_update_hot_points_count()
         {
             return this->update_hot_points_count;
+        }
+
+        int get_window_count()
+        {
+            return this->window_count;
+        }
+
+        unsigned get_window_size()
+        {
+            return this->window_size;
+        }
+
+        std::vector<int> get_try_enter_retset_points_counts()
+        {
+            return this->try_enter_retset_points_counts;
         }
 
     protected:
@@ -101,7 +116,12 @@ namespace efanna2e
         std::vector<const float *> query_list;      // 窗口内搜索请求记录
         std::mutex mtx_query_list;
 
+        // 记录更新热点次数
         int update_hot_points_count = 0;
+        // 记录经过了几个时间窗口
+        int window_count = 0;
+        // 记录每次主 Search 的尝试加入候选队列的点的数量
+        std::vector<int> try_enter_retset_points_counts;
     };
 }
 

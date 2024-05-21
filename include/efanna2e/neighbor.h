@@ -458,45 +458,40 @@ static inline int InsertIntoPool(std::vector<Neighbor> &retset, unsigned K, Neig
     return right;
 }
 
-    // 修改为链表
-    // 返回值为插入的 index
-    static inline int InsertIntoPool_linklist(Neighbors *&retset, Neighbor new_nn)
+// 修改为链表
+// 返回值为插入的 index
+static inline int InsertIntoPool_linklist(Neighbors *&retset, Neighbor new_nn)
+{
+    // 插入到带头节点有序链表中，且不会插到末尾
+    Node *pointer = retset->head;
+    unsigned index = 0;
+    while (pointer->next != nullptr)
     {
-        // 插入到带头节点有序链表中，且不会插到末尾
-        Node *pointer = retset->head;
-        unsigned index = 0;
-
-        while (pointer->next != nullptr)
+        // 在该 index 处插入
+        if (pointer->nn.distance <= new_nn.distance && pointer->next->nn.distance >= new_nn.distance)
         {
-            // 在该 index 处插入
-            if (pointer->nn.distance <= new_nn.distance && pointer->next->nn.distance >= new_nn.distance)
+            // 存在相同 id
+            if (pointer->nn.id == new_nn.id || pointer->next->nn.id == new_nn.id)
             {
-                // 存在相同 id
-                if (pointer->nn.id == new_nn.id || pointer->next->nn.id == new_nn.id)
-                {
-                    return retset->size + 1;
-                }
-                // 插入
-                Node *new_node = new Node(new_nn);
-                new_node->next = pointer->next;
-                pointer->next = new_node;
-                ++retset->size;
-
-                // 超过容量要截断
-                if (retset->size > retset->capacity)
-                {
-                    retset->remove_tail();
-                }
-
-                break;
+                return retset->size + 1;
             }
-
-            pointer = pointer->next;
-            ++index;
+            // 插入
+            Node *new_node = new Node(new_nn);
+            new_node->next = pointer->next;
+            pointer->next = new_node;
+            ++retset->size;
+            // 超过容量要截断
+            if (retset->size > retset->capacity)
+            {
+                retset->remove_tail();
+            }
+            break;
         }
-
-        return index;
+        pointer = pointer->next;
+        ++index;
     }
+    return index;
+}
 }
 
 #endif //EFANNA2E_GRAPH_H

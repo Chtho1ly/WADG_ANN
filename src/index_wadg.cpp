@@ -29,13 +29,13 @@ namespace efanna2e
       : IndexNSG(dimension, n, m, initializer) 
       {
         // 初始化 max_hot_points_num
-        max_hot_points_num = K;
+        max_hot_points_num = 200;
         // 初始化 window_size 搜索请求记录窗口大小
         // window_size >= cluster_num
-        window_size = K;
+        window_size = 1000;
         // 初始化 cluster_num 聚类中心数
-        // TODO 主要影响因素
-        cluster_num = K;
+        // 主要影响因素
+        cluster_num = 200;
       }
 
   // @CS0522
@@ -134,17 +134,6 @@ namespace efanna2e
     // unlock
     mtx_lru.unlock();
 
-    // TODO print the distance between init_ids[0] and search target
-    /*
-    if (record_query_flag == true)
-    {
-        std::cout << "init_ids[0]: " << init_ids[0] << std::endl;
-        std::cout << "distance: " <<
-                  distance_->compare(data_ + dimension_ * init_ids[0], query, (unsigned)dimension_)
-                  << std::endl;
-    }
-    */
-
     // 将 init_ids 中的节点放入 retset 作为候选节点集
     for (unsigned i = 0; i < init_ids.size(); i++)
     {
@@ -159,6 +148,8 @@ namespace efanna2e
 
     // greedy search
     int k = 0;
+    // 尝试加入 retset 的点的数量
+    int try_enter_retset_points_count = 0;
     while (k < (int)L)
     {
         int nk = (L < retset.size()) ? L : retset.size();
@@ -182,6 +173,12 @@ namespace efanna2e
                 {
                     continue;
                 }
+                // 统计尝试加入 retset 的点的数量
+                if (record_query_flag == true)
+                {
+                  ++try_enter_retset_points_count;
+                }
+                // ++try_enter_retset_points_count;
                 Neighbor nn(id, dist, true);
                 auto r = InsertIntoPool(retset, (L < retset.size()) ? L : retset.size(), nn);
 
@@ -209,11 +206,16 @@ namespace efanna2e
     {
       indices[i] = retset[i].id;
     }
+
+    // this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
     
     // 若 flag == true
-    // 并未进行热点识别和热点更新
+    // 进行热点识别和热点更新
     if (record_query_flag == true)
     {
+      // 尝试加入 retset 的点的数量
+      this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+
       record_query(query);
       // 如果 query_list 窗口已满
       if (query_list.size() >= window_size)
@@ -227,13 +229,17 @@ namespace efanna2e
         // t_tmp.join();
         // 清空 query_list
         query_list.clear();
+        // window count + 1
+        ++window_count;
       }
     }
   }
 
 
-  // TODO TEST
-  void save_querys(std::string filename, std::vector<const float *> &results, unsigned d)
+
+  // @CS0522
+  // TEST
+  void save_queries(std::string filename, std::vector<const float *> &results, unsigned d)
   {
       std::ofstream out(filename, std::ios::binary | std::ios::out);
 
@@ -302,15 +308,6 @@ namespace efanna2e
   {
     //热点识别
     std::vector<float *> query_centroids = get_cluster_centers(old_query_list, parameters, query_list.size());
-
-//    TODO TEST 搜索目标和聚类结果保存
-//    if (count <= 3)
-//    {
-//        efanna2e::save_querys("/home/frank/Workspace/ANN/Codes/visual_dataset/query_" + std::to_string(count) +  ".fvecs",
-//                      old_query_list, dimension_);
-//        efanna2e::save_clusters("/home/frank/Workspace/ANN/Codes/visual_dataset/cluster_" + std::to_string(count) +  ".fvecs",
-//                                query_centroids, dimension_);
-//    }
 
     auto K = parameters.Get<unsigned>("K_search");
 
@@ -399,20 +396,8 @@ namespace efanna2e
     //Tuple[0]: 返回的是数据集聚类中心的列表 (长度为 K)   
     //Tuple[1]: 返回的是输入数据集对应的标签 (归属于哪一个点)
     auto cluster_data = dkm::kmeans_lloyd(querys_in_vector, cluster_num);
-    std::vector<std::vector<float> > cluster_centers = std::get<0>(cluster_data);
+    auto cluster_centers = std::get<0>(cluster_data);
     auto labels = std::get<1>(cluster_data);
-
-//    TODO TEST 搜索目标和聚类结果保存
-//    if (count <= 3)
-//    {
-//        for (int i = 0; i < labels.size(); i++)
-//        {
-//            std::cout << labels[i] << " ";
-//        }
-//        std::cout << std::endl;
-//        efanna2e::save_labels("/home/frank/Workspace/ANN/Codes/visual_dataset/labels_" + std::to_string(count) +  ".ivecs",
-//                                labels);
-//    }
 
     // 将 std::array 转化回 float *
     std::vector<float *> cluster_centers_result;

@@ -42,6 +42,13 @@ class IndexNSG : public Index {
       unsigned *indices);
   void OptimizeGraph(float* data);
 
+  // @CS0522
+  std::vector<int> get_try_enter_retset_points_counts()
+  {
+    return this->try_enter_retset_points_counts;
+  }
+
+
   protected:
     typedef std::vector<std::vector<unsigned > > CompactGraph;
     typedef std::vector<SimpleNeighbors > LockGraph;
@@ -81,6 +88,10 @@ class IndexNSG : public Index {
     size_t data_len;
     size_t neighbor_len;
     KNNGraph nnd_graph;
+
+    // @CS0522
+    // 统计尝试加入 retset 的点的数量
+    std::vector<int> try_enter_retset_points_counts;
 };
 }
 
