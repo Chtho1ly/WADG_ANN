@@ -82,6 +82,11 @@ int main(int argc, char** argv) {
   auto e = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> diff = e - s;
   std::cout << "search time: " << diff.count() << "\n";
+  // print update count
+  printf("==========\n");
+  // print hyper parameters
+  std::cout << "Q = " << L 
+            << ", K = " << K << std::endl;
 
   std::cout << "主 Search 中尝试加入 retset 的点数量: " << std::endl;
   auto counts = index.get_try_enter_retset_points_counts();
@@ -90,7 +95,8 @@ int main(int argc, char** argv) {
   {
     total_counts += counts[i];
   }
-  std::cout << "Total(" << counts.size() << "): " << total_counts << std::endl;
+  std::cout << "Total(for " << counts.size() << " queries): " << total_counts << std::endl;
+  printf("==========\n");
 
   save_result(argv[6], res);
 

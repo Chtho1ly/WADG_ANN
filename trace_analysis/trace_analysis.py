@@ -373,7 +373,7 @@ if __name__ == "__main__":
         # 'deep.yandex', 
         # 't2i.yandex',
         # 'spacev.ms',
-        # 'gist.bigann',
-        'sift.bigann',
+        'gist.bigann',
+        # 'sift.bigann',
         ]
     process_files(trace_source_list)

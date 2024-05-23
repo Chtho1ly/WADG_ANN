@@ -3,6 +3,7 @@
 
 // @CS0522
 #include "efanna2e/lru_cache.h"
+#include <tuple>
 
 #include "util.h"
 #include "parameters.h"
@@ -69,9 +70,10 @@ namespace efanna2e
             return this->window_count;
         }
 
-        unsigned get_window_size()
+        std::tuple<unsigned, unsigned, unsigned> get_hyperparams()
         {
-            return this->window_size;
+            // W, C, L
+            return std::make_tuple(this->window_size, this->cluster_num, this->max_hot_points_num);
         }
 
         std::vector<int> get_try_enter_retset_points_counts()

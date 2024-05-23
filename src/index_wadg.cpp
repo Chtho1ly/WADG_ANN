@@ -29,7 +29,7 @@ namespace efanna2e
       : IndexNSG(dimension, n, m, initializer) 
       {
         // 初始化 max_hot_points_num
-        max_hot_points_num = 200;
+        max_hot_points_num = 1000;
         // 初始化 window_size 搜索请求记录窗口大小
         // window_size >= cluster_num
         window_size = 1000;
