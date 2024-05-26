@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     // @CS0522
     // 指向 vector 内部的指针
     unsigned *tmp_ = tmp.data();
-    index.Search(query_load + i * dim, paras, tmp_, true);
+    index.Search(query_load + i * dim, paras, tmp_, HOT_POINTS);
     res.push_back(tmp);
   }
   auto e = std::chrono::high_resolution_clock::now();

@@ -173,12 +173,19 @@ namespace efanna2e
                 {
                     continue;
                 }
+
                 // 统计尝试加入 retset 的点的数量
-                if (record_query_flag == true)
+                // 开启热点识别且为主 Search
+                if (HOT_POINTS && record_query_flag == true)
                 {
                   ++try_enter_retset_points_count;
                 }
-                // ++try_enter_retset_points_count;
+                // 未开启热点识别
+                if (!HOT_POINTS)
+                {
+                  ++try_enter_retset_points_count;
+                }
+
                 Neighbor nn(id, dist, true);
                 auto r = InsertIntoPool(retset, (L < retset.size()) ? L : retset.size(), nn);
 
@@ -207,11 +214,15 @@ namespace efanna2e
       indices[i] = retset[i].id;
     }
 
-    // this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+    // 未开启热点识别
+    if (!HOT_POINTS)
+    {
+      this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+    }
     
-    // 若 flag == true
+    // 开启热点识别且为主 Search
     // 进行热点识别和热点更新
-    if (record_query_flag == true)
+    if (HOT_POINTS && record_query_flag == true)
     {
       // 尝试加入 retset 的点的数量
       this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
@@ -236,70 +247,6 @@ namespace efanna2e
   }
 
 
-
-  // @CS0522
-  // TEST
-  void save_queries(std::string filename, std::vector<const float *> &results, unsigned d)
-  {
-      std::ofstream out(filename, std::ios::binary | std::ios::out);
-
-      std::vector<std::vector<float> > results_(results.size(), std::vector<float>(d));
-      for (int i = 0; i < results.size(); i++)
-      {
-          for (int j = 0; j < d; j++)
-          {
-              results_[i][j] = results[i][j];
-              // std::cout << results_[i][j] << " ";
-          }
-          // std::cout << std::endl;
-      }
-
-      for (unsigned i = 0; i < results.size(); i++)
-      {
-          unsigned dimension = (unsigned)results_[i].size();
-          out.write((char *)&dimension, sizeof(unsigned));
-          out.write((char *)results_[i].data(), dimension * sizeof(float));
-      }
-      out.close();
-  }
-
-  void save_clusters(std::string filename, std::vector<float *> &results, unsigned d)
-  {
-      std::ofstream out(filename, std::ios::binary | std::ios::out);
-
-      std::vector<std::vector<float> > results_(results.size(), std::vector<float>(d));
-      for (int i = 0; i < results.size(); i++)
-      {
-          for (int j = 0; j < d; j++)
-          {
-              results_[i][j] = results[i][j];
-              // std::cout << results_[i][j] << " ";
-          }
-          // std::cout << std::endl;
-      }
-
-      for (unsigned i = 0; i < results.size(); i++)
-      {
-          unsigned dimension = (unsigned)results_[i].size();
-          out.write((char *)&dimension, sizeof(unsigned));
-          out.write((char *)results_[i].data(), dimension * sizeof(float));
-      }
-      out.close();
-  }
-
-  void save_labels(std::string filename, std::vector<unsigned> &results)
-  {
-      std::ofstream out(filename, std::ios::binary | std::ios::out);
-
-      unsigned results_size = (unsigned)results.size();
-      out.write((char *)&results_size, sizeof(unsigned));
-      out.write((char *)results.data(), results.size() * sizeof(unsigned));
-
-      out.close();
-  }
-
-
-  
   // @CS0522
   // 用于多线程的热点识别和热点更新
   void IndexWADG::identify_and_update(std::vector<const float*> old_query_list, 

@@ -418,6 +418,7 @@ static inline int InsertIntoPool(std::vector<Neighbor> &retset, unsigned K, Neig
         retset.insert(retset.begin() + left, new_nn);
         return left;
     }
+    // 实际不会进入这个 if 分支
     if(retset[right].distance < new_nn.distance)
     {
         retset.insert(retset.begin() + K, new_nn);
