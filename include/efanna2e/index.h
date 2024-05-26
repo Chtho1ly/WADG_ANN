@@ -14,6 +14,15 @@
 #include "distance.h"
 #include "parameters.h"
 
+// DEGUG
+#define DEBUG true
+// print
+#define PRINT_INFO true
+// enable hot points
+#define HOT_POINTS true
+// nsg random points
+#define NSG_RANDOM true
+
 namespace efanna2e {
 
 class Index {

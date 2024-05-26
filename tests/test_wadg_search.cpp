@@ -88,22 +88,50 @@ int main(int argc, char **argv)
 
   auto s = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<unsigned>> res;
-  // TODO print query_num
-  // std::cout << "query_num: " << query_num << std::endl;
+
   for (unsigned i = 0; i < query_num; i++)
   {
     std::vector<unsigned> tmp(K);
     // @CS0522
     // 指向 vector 内部的指针
     unsigned *tmp_ = tmp.data();
-    index.Search(query_load + i * dim, paras, tmp_, false);
+    index.Search(query_load + i * dim, paras, tmp_, HOT_POINTS);
     res.push_back(tmp);
   }
   auto e = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> diff = e - s;
   std::cout << "search time: " << diff.count() << "\n";
-  // TODO print
-  std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
+
+  // print infos
+  if (PRINT_INFO)
+  {
+    printf("==========\n");
+    std::cout << "更新窗口次数: " << index.get_window_count() << std::endl;
+    std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
+
+    // print hyper parameters
+    auto hyperparams = index.get_hyperparams();
+    std::cout << "超参数: "
+              << "W = " << std::get<0>(hyperparams)
+              << ", C = " << std::get<1>(hyperparams)
+              << ", Q = " << L
+              << ", L = " << std::get<2>(hyperparams)
+              << ", K = " << K << std::endl;
+
+    // DEBUG
+    if (DEBUG)
+    {
+      std::cout << "主 Search 中尝试加入 retset 的点数量: " << std::endl;
+      auto counts = index.get_try_enter_retset_points_counts();
+      int total_counts = 0;
+      for (int i = 0; i < counts.size(); i++)
+      {
+        total_counts += counts[i];
+      }
+      std::cout << "Total(for " << counts.size() << " queries): " << total_counts << std::endl;
+    }
+    printf("==========\n");
+  }
 
   save_result(argv[6], res);
 

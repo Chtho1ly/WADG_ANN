@@ -197,7 +197,7 @@ def cal_combined_ratios(queries, bases, n_clusters, cluster_method='k-means'):
     base_centroid = np.mean(bases, axis=0)
 
     # Initialize lists to collect distance ratios and cluster sizes
-    ratio1_list, ratio2_list, ratio3_list, cluster_sizes = [], [], [], []
+    ratio1_list, ratio2_list, ratio3_list, ratio4_list, cluster_sizes = [], [], [], [], []
 
     for i in range(n_clusters):
         # Select all points in the current cluster
@@ -221,43 +221,55 @@ def cal_combined_ratios(queries, bases, n_clusters, cluster_method='k-means'):
             cluster_to_base_centroid_distances = cdist(cluster_points, [base_centroid], 'euclidean')
             average_cluster_to_base_centroid_distance = np.mean(cluster_to_base_centroid_distances)
 
+            # 实验 4
+            # the nearest random point index to the cluster centers
+            nearest_center_to_base_distance_index = np.argmin(center_to_bases_distances)
+            # Cluster to the nearest point distances
+            cluster_to_nearest_center_distances = cdist(cluster_points, [bases[nearest_center_to_base_distance_index]], 'euclidean')
+            average_cluster_to_nearest_center_distance = np.mean(cluster_to_nearest_center_distances)
+
             # Calculate ratios and round to three decimal places
             ratio1 = round(average_intra_distance / average_cluster_to_base_distance, 3)
             ratio2 = round(average_intra_distance / average_center_to_base_distance, 3)
             ratio3 = round(average_intra_distance / average_cluster_to_base_centroid_distance, 3)
+            # 
+            ratio4 = round(average_intra_distance / average_cluster_to_nearest_center_distance, 3)
 
             # Append each ratio to its respective list
             ratio1_list.append(ratio1)
             ratio2_list.append(ratio2)
             ratio3_list.append(ratio3)
+            ratio4_list.append(ratio4)
             cluster_sizes.append(cluster_size)
 
     # Return the tuple of lists including cluster sizes
-    return (ratio1_list, ratio2_list, ratio3_list, cluster_sizes)
+    return (ratio1_list, ratio2_list, ratio3_list, ratio4_list, cluster_sizes)
 
-def cal_weighted_avg_ratio(ratio1_list, ratio2_list, ratio3_list, cluster_sizes):
+def cal_weighted_avg_ratio(ratio1_list, ratio2_list, ratio3_list, ratio4_list, cluster_sizes):
     # Initialize weighted sums and total weight counters
-    weighted_sum1, weighted_sum2, weighted_sum3 = 0, 0, 0
+    weighted_sum1, weighted_sum2, weighted_sum3, weighted_sum4 = 0, 0, 0, 0
     total_weight = sum(cluster_sizes)  # Total weight is the sum of all cluster sizes
 
     # Calculate weighted sums for each ratio
-    for size, ratio1, ratio2, ratio3 in zip(cluster_sizes, ratio1_list, ratio2_list, ratio3_list):
+    for size, ratio1, ratio2, ratio3, ratio4 in zip(cluster_sizes, ratio1_list, ratio2_list, ratio3_list, ratio4_list):
         weighted_sum1 += ratio1 * size
         weighted_sum2 += ratio2 * size
         weighted_sum3 += ratio3 * size
+        weighted_sum4 += ratio4 * size
 
     # Calculate the weighted averages
     if total_weight > 0:
         weighted_average1 = weighted_sum1 / total_weight
         weighted_average2 = weighted_sum2 / total_weight
         weighted_average3 = weighted_sum3 / total_weight
+        weighted_average4 = weighted_sum4 / total_weight
     else:
         # Handle case where total weight is zero (unlikely unless all clusters are empty)
-        weighted_average1, weighted_average2, weighted_average3 = None, None, None
+        weighted_average1, weighted_average2, weighted_average3, weighted_average4 = None, None, None
 
-    return (weighted_average1, weighted_average2, weighted_average3)
+    return (weighted_average1, weighted_average2, weighted_average3, weighted_average4)
 
-def plot_ratios(x_coords, ratio1_list, ratio2_list, ratio3_list, trace_name, cluster_ratio, cluster_method='k-means'):
+def plot_ratios(x_coords, ratio1_list, ratio2_list, ratio3_list, ratio4_list, trace_name, cluster_ratio, cluster_method='k-means'):
     # Create a plot
     plt.figure(figsize=(10, 6))
 
@@ -265,6 +277,7 @@ def plot_ratios(x_coords, ratio1_list, ratio2_list, ratio3_list, trace_name, clu
     plt.plot(x_coords, ratio1_list, label='center base ratios', marker='o', linestyle='-')
     plt.plot(x_coords, ratio2_list, label='cluster base ratios', marker='o', linestyle='-')
     plt.plot(x_coords, ratio3_list, label='root cluster ratios', marker='o', linestyle='-')
+    plt.plot(x_coords, ratio4_list, label='cluster nearest ratios', marker='o', linestyle='-')
 
     # Adding labels and title
     plt.xlabel('window size')
@@ -274,9 +287,9 @@ def plot_ratios(x_coords, ratio1_list, ratio2_list, ratio3_list, trace_name, clu
 
     # Show the plot
     plt.grid(True)
-    save_path = os.path.join('trace_analysis', 'figs', f'window_size_vs_ratios_{trace_name}_{cluster_ratio}_{cluster_method}.png')
+    save_path = os.path.join('trace_analysis', 'figs_new', f'window_size_vs_ratios_{trace_name}_{cluster_ratio}_{cluster_method}.png')
     plt.savefig(save_path)
-    plt.show()
+    # plt.show()
 
 def process_files(trace_source_list):
     for trace_source in trace_source_list:
@@ -289,27 +302,27 @@ def process_files(trace_source_list):
 
             # 查询距离-结果重合率散点图
             # 魔改轮廓系数
-            cluster_ratio = 5
-            window_sizes = [20, 50, 200, 500, 1000]
-            if trace_name == 'sift': # sift数据集query向量数量为10000，可以扩大窗口
-                window_sizes.extend([2000, 4000])
-            for window_size in window_sizes:
-                cluster_num = window_size//cluster_ratio
-                print(f"{trace_name}: window_size={window_size}, cluster_num={cluster_num}")
-                query_vectors_window = query_vectors[:window_size]
-                groundtruth_vectors_window = groundtruth_vectors[:window_size]
+            # cluster_ratio = 5
+            # window_sizes = [20, 50, 200, 500, 1000]
+            # if trace_name == 'sift': # sift数据集query向量数量为10000，可以扩大窗口
+            #     window_sizes.extend([2000, 4000])
+            # for window_size in window_sizes:
+            #     cluster_num = window_size//cluster_ratio
+            #     print(f"{trace_name}: window_size={window_size}, cluster_num={cluster_num}")
+            #     query_vectors_window = query_vectors[:window_size]
+            #     groundtruth_vectors_window = groundtruth_vectors[:window_size]
             
                 # 查询距离-结果重合率散点图
-                distances = cal_euclidean_distances(query_vectors_window)
-                overlaps = cal_overlap(groundtruth_vectors_window)
-                plot_distances_vs_overlap(distances, overlaps, trace_name, window_size)
+                # distances = cal_euclidean_distances(query_vectors_window)
+                # overlaps = cal_overlap(groundtruth_vectors_window)
+                # plot_distances_vs_overlap(distances, overlaps, trace_name, window_size)
                 
                 # 魔改轮廓系数
                 # 在命令行输出，不会保存到文件
                 
-                alt_silhouette_coefficient, cluster_size = cal_alt_silhouette_coefficient(np.array(query_vectors_window), np.array(base_vectors), cluster_num)
-                print(f"Alternative Silhouette Coefficient for {trace_name}: {alt_silhouette_coefficient}")
-                print(f"                               Cluster Size: {cluster_size}")
+                # alt_silhouette_coefficient, cluster_size = cal_alt_silhouette_coefficient(np.array(query_vectors_window), np.array(base_vectors), cluster_num)
+                # print(f"Alternative Silhouette Coefficient for {trace_name}: {alt_silhouette_coefficient}")
+                # print(f"                               Cluster Size: {cluster_size}")
             
             # 簇到base平均距离
             cluster_ratios = [5, 10] # query向量数与聚类中心数之比
@@ -323,19 +336,22 @@ def process_files(trace_source_list):
                 window_sizes.extend(range(1000, 4200, 200))
             for cluster_method in cluster_methods:
                 for cluster_ratio in cluster_ratios:
-                    avg_center_base_ratios, avg_cluster_base_ratios, avg_root_cluster_ratios = [], [], [] # 使用不同窗口大小时的比例，用于做图
+                    avg_center_base_ratios, avg_cluster_base_ratios, avg_root_cluster_ratios, avg_cluster_nearest_ratios = [], [], [], [] # 使用不同窗口大小时的比例，用于做图
                     for window_size in window_sizes:
                         cluster_num = window_size//cluster_ratio
+                        # query vectors window
+                        query_vectors_window = query_vectors[:window_size]
                         print(f"{trace_name}: window_size={window_size}, cluster_num={cluster_num}")
                         
                         # 各簇对应比例系数以及簇的大小
-                        center_base_ratios, cluster_base_ratios, root_cluster_ratios, cluster_sizes = cal_combined_ratios(np.array(query_vectors_window), np.array(base_vectors), cluster_num, cluster_method)
+                        center_base_ratios, cluster_base_ratios, root_cluster_ratios, cluster_nearest_ratios, cluster_sizes = cal_combined_ratios(np.array(query_vectors_window), np.array(base_vectors), cluster_num, cluster_method)
                         # 以簇大小为权重求加权平均
-                        avg_ratios = cal_weighted_avg_ratio(center_base_ratios, cluster_base_ratios, root_cluster_ratios, cluster_sizes)
+                        avg_ratios = cal_weighted_avg_ratio(center_base_ratios, cluster_base_ratios, root_cluster_ratios, cluster_nearest_ratios, cluster_sizes)
                         avg_center_base_ratios.append(avg_ratios[0])
                         avg_cluster_base_ratios.append(avg_ratios[1])
                         avg_root_cluster_ratios.append(avg_ratios[2])
-                    plot_ratios(window_sizes, avg_center_base_ratios, avg_cluster_base_ratios, avg_root_cluster_ratios, trace_name, cluster_ratio, cluster_method)
+                        avg_cluster_nearest_ratios.append(avg_ratios[3])
+                    plot_ratios(window_sizes, avg_center_base_ratios, avg_cluster_base_ratios, avg_root_cluster_ratios, avg_cluster_nearest_ratios, trace_name, cluster_ratio, cluster_method)
         
         # 没找到完整数据集，只分析了groundtruth里面的重用距离
         elif source == '.yandex':
@@ -349,15 +365,15 @@ def process_files(trace_source_list):
             continue
         
         # 重用距离cdf
-        reuse_distances, total_searches = cal_reuse_distances(groundtruth_vectors)
-        plot_reuse_distances_cdf(trace_name, reuse_distances, total_searches)
+        # reuse_distances, total_searches = cal_reuse_distances(groundtruth_vectors)
+        # plot_reuse_distances_cdf(trace_name, reuse_distances, total_searches)
 
 if __name__ == "__main__":
     trace_source_list = [
-        'deep.yandex', 
-        't2i.yandex',
-        'spacev.ms',
+        # 'deep.yandex', 
+        # 't2i.yandex',
+        # 'spacev.ms',
         'gist.bigann',
-        'sift.bigann',
+        # 'sift.bigann',
         ]
     process_files(trace_source_list)
