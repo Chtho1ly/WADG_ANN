@@ -29,7 +29,7 @@ namespace efanna2e
       : IndexNSG(dimension, n, m, initializer) 
       {
         // 初始化 max_hot_points_num
-        max_hot_points_num = 1000;
+        max_hot_points_num = 300;
         // 初始化 window_size 搜索请求记录窗口大小
         // window_size >= cluster_num
         window_size = 1000;
@@ -80,71 +80,117 @@ namespace efanna2e
     auto L = parameters.Get<unsigned>("L_search");
     auto K = parameters.Get<unsigned>("K_search");
 
-    unsigned pq_size = (L < hot_points_lru->get_size()) ? L : hot_points_lru->get_size();
-
     std::vector<unsigned> init_ids;
     std::vector<Neighbor> retset;
     boost::dynamic_bitset<> flags{nd_, 0};
 
-    // 从 LRU 缓存中选取离搜索目标最近的 pq_size 个点作为初始队列 init_ids
-    // 求前 L 个最小元素，构建大顶堆
-    // 函数指针
-    auto cmp = [this, query](unsigned a, unsigned b) -> bool {
-        return (distance_->compare(data_ + dimension_ * a, query, (unsigned)dimension_)
-                <
-                distance_->compare(data_ + dimension_ * b, query, (unsigned)dimension_));
-    };
-    // 大顶堆
-    std::priority_queue<unsigned, std::vector<unsigned>, decltype(cmp)> pq(cmp);
-    // 先往大顶堆压入 pq_size 个元素
+    unsigned init_size = (L < hot_points_lru->get_size()) ? L : hot_points_lru->get_size();
+
     // lock
     mtx_lru.lock();
-    for (unsigned i = 0; i < pq_size; ++i)
+    // 获取 lru 数据副本
+    auto lru_copy = hot_points_lru->get_cache();
+    // unlock
+    mtx_lru.unlock();
+
+    /**
+    * 从 LRU 缓存中选取离搜索目标最近的 init_size 个点作为初始队列
+    * pair + priority_queue 实现
+    * std::pair<unsigned, float>: (id, distance)
+    * vector 存储 id 和该点到 query 的距离
+    */
+    std::vector<std::pair<unsigned, float> > pairs;
+    for (int i = 0; i < lru_copy.size(); ++i)
     {
-        pq.push(hot_points_lru->visit(i));
+      unsigned id = lru_copy[i];
+      pairs.emplace_back(std::make_pair(id, distance_->compare(data_ + dimension_ * id, query, (unsigned)dimension_)));
+    }
+    // 销毁 lru_copy
+    lru_copy.clear();
+    lru_copy.shrink_to_fit();
+    // 求前 init_size 个最小元素，构建大顶堆
+    // 函数指针
+    auto cmp = [](std::pair<unsigned, float> &a, std::pair<unsigned, float> &b) -> bool {
+          return a.second < b.second;
+    };
+    std::priority_queue<std::pair<unsigned, float>, std::vector<std::pair<unsigned, float> >, decltype(cmp)> pq(cmp);
+    // 大顶堆中压入 init_size 个元素
+    for (int i = 0; i < init_size; ++i)
+    {
+      pq.push(pairs[i]);
     }
     // 循环比较剩余元素
-    for (unsigned j = pq_size; j < hot_points_lru->get_size(); ++j)
+    for (int j = init_size; j < pairs.size(); ++j)
     {
-        if (distance_->compare(data_ + dimension_ * hot_points_lru->visit(j), query, (unsigned)dimension_)
-            <
-            distance_->compare(data_ + dimension_ * pq.top(), query, (unsigned)dimension_))
-        {
-            pq.pop();
-            pq.push(hot_points_lru->visit(j));
-        }
+      if (pairs[j].second < pq.top().second)
+      {
+        pq.pop();
+        pq.push(pairs[j]);
+      }
     }
-    // unlock
-    mtx_lru.unlock();
 
-    // 从大顶堆中选取所有点（点的个数小于 L）
+    // 大根堆中的所有点加入 init_ids 中
+    // while (!pq.empty())
+    // {
+    //     // 大顶堆中的元素倒序加入
+    //     init_ids.insert(init_ids.begin(), pq.top().first);
+    //     pq.pop();
+    //     flags[init_ids[0]] = true;
+    // }
+
+    // 大根堆中的所有点加入 retset 中
     while (!pq.empty())
     {
-        // 大顶堆中的元素倒序加入
-        init_ids.insert(init_ids.begin(), pq.top());
-        pq.pop();
+      auto id = pq.top().first;
+      auto dist = pq.top().second;
+      // 此时 retset 顺序为 distance 从大到小
+      retset.emplace_back(Neighbor(id, dist, true));
+      pq.pop();
 
-        flags[init_ids[0]] = true;
+      // set flags
+      flags[id] = true;
     }
 
-    // 将初始队列中的第一个节点放到 LRU 缓存头部
+    // DEBUG
+    if (DEBUG)
+    {
+      std::cout << "\n===== DEBUG =====\n";
+      std::cout << "retset after emplace_back(): " << std::endl;
+      for (int i = 0; i < retset.size(); ++i)
+      {
+        std::cout << "(" << retset[i].id << ", " << retset[i].distance << ") ";
+      }
+      std::cout << std::endl;
+    }
+   
+    // 加入后 retset 顺序为 distance 从大到小，进行反转
+    std::reverse(retset.begin(), retset.end());
+
+    // DEBUG
+    if (DEBUG)
+    {
+      std::cout << "\n===== DEBUG =====\n";
+      std::cout << "retset after reverse(): " << std::endl;
+      for (int i = 0; i < retset.size(); ++i)
+      {
+        std::cout << "(" << retset[i].id << ", " << retset[i].distance << ") ";
+      }
+      std::cout << std::endl;
+    }
+
+    // 距离 query 最近的 id 放到 LRU 缓存头部
     // lock
     mtx_lru.lock();
-    hot_points_lru->put(init_ids[0]);
+    hot_points_lru->put(retset[0].id);
     // unlock
     mtx_lru.unlock();
 
-    // 将 init_ids 中的节点放入 retset 作为候选节点集
-    for (unsigned i = 0; i < init_ids.size(); i++)
+    // DEBUG
+    if (DEBUG)
     {
-      unsigned id = init_ids[i];
-      float dist = 
-          distance_->compare(data_ + dimension_ * id, query, (unsigned)dimension_);
-      retset.push_back(Neighbor(id, dist, true));
-      // flags[id] = true;
+      std::cout << "\n===== DEBUG =====\n";
+      std::cout << "LRU head id: " << hot_points_lru->visit(0) << std::endl;
     }
-
-    std::sort(retset.begin(), retset.end());
 
     // greedy search
     int k = 0;
@@ -152,7 +198,8 @@ namespace efanna2e
     int try_enter_retset_points_count = 0;
     while (k < (int)L)
     {
-        int nk = (L < retset.size()) ? L : retset.size();
+        int len = (L < retset.size()) ? L : retset.size();
+        int nk = len;
 
         if (retset[k].flag)
         {
@@ -169,7 +216,7 @@ namespace efanna2e
                 flags[id] = 1;
                 float dist =
                         distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-                if (dist >= retset[(L < retset.size() ? L : retset.size()) - 1].distance)
+                if (dist >= retset[len - 1].distance)
                 {
                     continue;
                 }
@@ -187,7 +234,10 @@ namespace efanna2e
                 }
 
                 Neighbor nn(id, dist, true);
-                auto r = InsertIntoPool(retset, (L < retset.size()) ? L : retset.size(), nn);
+                auto r = InsertIntoPool(retset, len, nn);
+
+                // update len
+                len = (L < retset.size()) ? L : retset.size();
 
                 if (r < nk)
                 {

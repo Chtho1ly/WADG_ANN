@@ -44,7 +44,6 @@ void save_result(char *filename, std::vector<std::vector<unsigned>> &results)
   out.close();
 }
 
-
 int main(int argc, char **argv)
 {
   if (argc != 7)
@@ -102,29 +101,37 @@ int main(int argc, char **argv)
   auto e = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> diff = e - s;
   std::cout << "search time: " << diff.count() << "\n";
-  // print update count
-  printf("==========\n");
-  std::cout << "更新窗口次数: " << index.get_window_count() << std::endl;
-  std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
-  // print hyper parameters
-  auto hyperparams = index.get_hyperparams();
-  std::cout << "超参数: " 
-            << "W = " << std::get<0>(hyperparams) 
-            << ", C = " << std::get<1>(hyperparams) 
-            << ", Q = " << L 
-            << ", L = " << std::get<2>(hyperparams) 
-            << ", K = " << K << std::endl;
- 
-  // print try to enter retset points counts
-  std::cout << "主 Search 中尝试加入 retset 的点数量: " << std::endl;
-  auto counts = index.get_try_enter_retset_points_counts();
-  int total_counts = 0;
-  for (int i = 0; i < counts.size(); i++)
+
+  // print infos
+  if (PRINT_INFO)
   {
-    total_counts += counts[i];
+    printf("==========\n");
+    std::cout << "更新窗口次数: " << index.get_window_count() << std::endl;
+    std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
+
+    // print hyper parameters
+    auto hyperparams = index.get_hyperparams();
+    std::cout << "超参数: "
+              << "W = " << std::get<0>(hyperparams)
+              << ", C = " << std::get<1>(hyperparams)
+              << ", Q = " << L
+              << ", L = " << std::get<2>(hyperparams)
+              << ", K = " << K << std::endl;
+
+    // DEBUG
+    if (DEBUG)
+    {
+      std::cout << "主 Search 中尝试加入 retset 的点数量: " << std::endl;
+      auto counts = index.get_try_enter_retset_points_counts();
+      int total_counts = 0;
+      for (int i = 0; i < counts.size(); i++)
+      {
+        total_counts += counts[i];
+      }
+      std::cout << "Total(for " << counts.size() << " queries): " << total_counts << std::endl;
+    }
+    printf("==========\n");
   }
-  std::cout << "Total(for " << counts.size() << " queries): " << total_counts << std::endl;
-  printf("==========\n");
 
   save_result(argv[6], res);
 
