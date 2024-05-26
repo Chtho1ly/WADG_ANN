@@ -80,7 +80,6 @@ namespace efanna2e
     auto L = parameters.Get<unsigned>("L_search");
     auto K = parameters.Get<unsigned>("K_search");
 
-    std::vector<unsigned> init_ids;
     std::vector<Neighbor> retset;
     boost::dynamic_bitset<> flags{nd_, 0};
 
@@ -128,15 +127,6 @@ namespace efanna2e
         pq.push(pairs[j]);
       }
     }
-
-    // 大根堆中的所有点加入 init_ids 中
-    // while (!pq.empty())
-    // {
-    //     // 大顶堆中的元素倒序加入
-    //     init_ids.insert(init_ids.begin(), pq.top().first);
-    //     pq.pop();
-    //     flags[init_ids[0]] = true;
-    // }
 
     // 大根堆中的所有点加入 retset 中
     while (!pq.empty())
