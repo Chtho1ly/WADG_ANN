@@ -29,13 +29,13 @@ namespace efanna2e
       : IndexNSG(dimension, n, m, initializer) 
       {
         // 初始化 max_hot_points_num
-        max_hot_points_num = 300;
+        max_hot_points_num = K;
         // 初始化 window_size 搜索请求记录窗口大小
         // window_size >= cluster_num
-        window_size = 1000;
+        window_size = K;
         // 初始化 cluster_num 聚类中心数
         // 主要影响因素
-        cluster_num = 200;
+        cluster_num = K / 20;
       }
 
   // @CS0522
@@ -68,7 +68,6 @@ namespace efanna2e
       {
           hot_points_lru->put(final_graph_[get_ep_()][i]);
       }
-      // 与 nsg 中 init_ids 加入的导航点一致
   }
 
 
@@ -80,121 +79,84 @@ namespace efanna2e
     auto L = parameters.Get<unsigned>("L_search");
     auto K = parameters.Get<unsigned>("K_search");
 
-    std::vector<Neighbor> retset;
+    unsigned pq_size = (L < hot_points_lru->get_size()) ? L : hot_points_lru->get_size();
+
+    // retset 修改为链表
+    Neighbors *retset = new Neighbors(L);
+    std::vector<unsigned> init_ids;
     boost::dynamic_bitset<> flags{nd_, 0};
 
-    unsigned init_size = (L < hot_points_lru->get_size()) ? L : hot_points_lru->get_size();
-
+    // 从 LRU 缓存中选取离搜索目标最近的 pq_size 个点作为初始队列 init_ids
+    // 求前 L 个最小元素，构建大顶堆
+    // 函数指针
+    auto cmp = [this, query](unsigned a, unsigned b) -> bool {
+        return (distance_->compare(data_ + dimension_ * a, query, (unsigned)dimension_)
+                <
+                distance_->compare(data_ + dimension_ * b, query, (unsigned)dimension_));
+    };
+    // 大顶堆
+    std::priority_queue<unsigned, std::vector<unsigned>, decltype(cmp)> pq(cmp);
+    // 先往大顶堆压入 pq_size 个元素
     // lock
     mtx_lru.lock();
-    // 获取 lru 数据副本
-    auto lru_copy = hot_points_lru->get_cache();
-    // unlock
-    mtx_lru.unlock();
-
-    /**
-    * 从 LRU 缓存中选取离搜索目标最近的 init_size 个点作为初始队列
-    * pair + priority_queue 实现
-    * std::pair<unsigned, float>: (id, distance)
-    * vector 存储 id 和该点到 query 的距离
-    */
-    std::vector<std::pair<unsigned, float> > pairs;
-    for (int i = 0; i < lru_copy.size(); ++i)
+    for (unsigned i = 0; i < pq_size; ++i)
     {
-      unsigned id = lru_copy[i];
-      pairs.emplace_back(std::make_pair(id, distance_->compare(data_ + dimension_ * id, query, (unsigned)dimension_)));
-    }
-    // 销毁 lru_copy
-    lru_copy.clear();
-    lru_copy.shrink_to_fit();
-    // 求前 init_size 个最小元素，构建大顶堆
-    // 函数指针
-    auto cmp = [](std::pair<unsigned, float> &a, std::pair<unsigned, float> &b) -> bool {
-          return a.second < b.second;
-    };
-    std::priority_queue<std::pair<unsigned, float>, std::vector<std::pair<unsigned, float> >, decltype(cmp)> pq(cmp);
-    // 大顶堆中压入 init_size 个元素
-    for (int i = 0; i < init_size; ++i)
-    {
-      pq.push(pairs[i]);
+        pq.push(hot_points_lru->visit(i));
     }
     // 循环比较剩余元素
-    for (int j = init_size; j < pairs.size(); ++j)
+    for (unsigned j = pq_size; j < hot_points_lru->get_size(); ++j)
     {
-      if (pairs[j].second < pq.top().second)
-      {
-        pq.pop();
-        pq.push(pairs[j]);
-      }
+        if (distance_->compare(data_ + dimension_ * hot_points_lru->visit(j), query, (unsigned)dimension_)
+            <
+            distance_->compare(data_ + dimension_ * pq.top(), query, (unsigned)dimension_))
+        {
+            pq.pop();
+            pq.push(hot_points_lru->visit(j));
+        }
     }
-
-    // 大根堆中的所有点加入 retset 中
-    while (!pq.empty())
-    {
-      auto id = pq.top().first;
-      auto dist = pq.top().second;
-      // 此时 retset 顺序为 distance 从大到小
-      retset.emplace_back(Neighbor(id, dist, true));
-      pq.pop();
-
-      // set flags
-      flags[id] = true;
-    }
-
-    // DEBUG
-    if (DEBUG)
-    {
-      std::cout << "\n===== DEBUG =====\n";
-      std::cout << "retset after emplace_back(): " << std::endl;
-      for (int i = 0; i < retset.size(); ++i)
-      {
-        std::cout << "(" << retset[i].id << ", " << retset[i].distance << ") ";
-      }
-      std::cout << std::endl;
-    }
-   
-    // 加入后 retset 顺序为 distance 从大到小，进行反转
-    std::reverse(retset.begin(), retset.end());
-
-    // DEBUG
-    if (DEBUG)
-    {
-      std::cout << "\n===== DEBUG =====\n";
-      std::cout << "retset after reverse(): " << std::endl;
-      for (int i = 0; i < retset.size(); ++i)
-      {
-        std::cout << "(" << retset[i].id << ", " << retset[i].distance << ") ";
-      }
-      std::cout << std::endl;
-    }
-
-    // 距离 query 最近的 id 放到 LRU 缓存头部
-    // lock
-    mtx_lru.lock();
-    hot_points_lru->put(retset[0].id);
     // unlock
     mtx_lru.unlock();
 
-    // DEBUG
-    if (DEBUG)
+    // 从大顶堆中选取所有点（点的个数可能小于 L）
+    while (!pq.empty())
     {
-      std::cout << "\n===== DEBUG =====\n";
-      std::cout << "LRU head id: " << hot_points_lru->visit(0) << std::endl;
+        // 大顶堆中的元素倒序加入
+        init_ids.insert(init_ids.begin(), pq.top());
+        pq.pop();
+
+        flags[init_ids[0]] = true;
     }
 
-    // greedy search
-    int k = 0;
-    // 尝试加入 retset 的点的数量
-    int try_enter_retset_points_count = 0;
-    while (k < (int)L)
-    {
-        int len = (L < retset.size()) ? L : retset.size();
-        int nk = len;
+    // 将初始队列中的第一个节点放到 LRU 缓存头部
+    // lock
+    mtx_lru.lock();
+    hot_points_lru->put(init_ids[0]);
+    // unlock
+    mtx_lru.unlock();
 
-        if (retset[k].flag)
+    // 将 init_ids 中的节点放入 retset 作为候选节点集
+    for (unsigned i = 0; i < init_ids.size(); i++)
+    {
+      unsigned id = init_ids[i];
+      float dist = 
+          distance_->compare(data_ + dimension_ * id, query, (unsigned)dimension_);
+      retset->insert_head(Neighbor(id, dist, true));
+      // flags[id] = true;
+    }
+
+    retset->sort(retset->head->next, retset->get_tail());
+
+    // greedy search
+    auto p = retset->head->next;
+    auto p_index = 0;
+    while (p != nullptr)
+    {
+        auto np_index = retset->size;
+
+        if (p->nn.flag)
         {
-            retset[k].flag = false;
-            unsigned n = retset[k].id;
+            p->nn.flag = false;
+            unsigned n = p->nn.id;
 
             for (unsigned m = 0; m < final_graph_[n].size(); ++m)
             {
@@ -206,67 +168,47 @@ namespace efanna2e
                 flags[id] = 1;
                 float dist =
                         distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-                if (dist >= retset[len - 1].distance)
+                if (dist >= retset->get_tail()->nn.distance)
                 {
                     continue;
                 }
-
-                // 统计尝试加入 retset 的点的数量
-                // 开启热点识别且为主 Search
-                if (HOT_POINTS && record_query_flag == true)
-                {
-                  ++try_enter_retset_points_count;
-                }
-                // 未开启热点识别
-                if (!HOT_POINTS)
-                {
-                  ++try_enter_retset_points_count;
-                }
-
+                // TODO 修改为新建一个 temp 链表排序后与 retset 归并
                 Neighbor nn(id, dist, true);
-                auto r = InsertIntoPool(retset, len, nn);
+                auto r = InsertIntoPool_linklist(retset, nn);
 
-                // update len
-                len = (L < retset.size()) ? L : retset.size();
-
-                if (r < nk)
+                if (r < np_index)
                 {
                     // 在 r 位置插入了一个 nn
                     // 回溯
-                    nk = r;
+                    np_index = r;
                 }
             }
         }
         // 回溯
-        if (nk <= k)
+        if (np_index <= p_index)
         {
-          k = nk;
+          p = retset->get(np_index);
+          p_index = np_index;
         }
         else
         {
-          ++k;
+          p = p->next;
+          ++p_index;
         }
     }
 
     // 记录搜索结果
+    auto pp = retset->head->next;
     for (auto i = 0; i < K; i++)
     {
-      indices[i] = retset[i].id;
-    }
-
-    // 未开启热点识别
-    if (!HOT_POINTS)
-    {
-      this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+      indices[i] = pp->nn.id;
+      pp = pp->next;
     }
     
-    // 开启热点识别且为主 Search
-    // 进行热点识别和热点更新
-    if (HOT_POINTS && record_query_flag == true)
+    // 若 flag == true
+    // 并未进行热点识别和热点更新
+    if (record_query_flag == true)
     {
-      // 尝试加入 retset 的点的数量
-      this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
-
       record_query(query);
       // 如果 query_list 窗口已满
       if (query_list.size() >= window_size)
@@ -280,13 +222,74 @@ namespace efanna2e
         // t_tmp.join();
         // 清空 query_list
         query_list.clear();
-        // window count + 1
-        ++window_count;
       }
     }
   }
 
 
+
+  // TEST
+  void save_querys(std::string filename, std::vector<const float *> &results, unsigned d)
+  {
+      std::ofstream out(filename, std::ios::binary | std::ios::out);
+
+      std::vector<std::vector<float> > results_(results.size(), std::vector<float>(d));
+      for (int i = 0; i < results.size(); i++)
+      {
+          for (int j = 0; j < d; j++)
+          {
+              results_[i][j] = results[i][j];
+              // std::cout << results_[i][j] << " ";
+          }
+          // std::cout << std::endl;
+      }
+
+      for (unsigned i = 0; i < results.size(); i++)
+      {
+          unsigned dimension = (unsigned)results_[i].size();
+          out.write((char *)&dimension, sizeof(unsigned));
+          out.write((char *)results_[i].data(), dimension * sizeof(float));
+      }
+      out.close();
+  }
+
+  void save_clusters(std::string filename, std::vector<float *> &results, unsigned d)
+  {
+      std::ofstream out(filename, std::ios::binary | std::ios::out);
+
+      std::vector<std::vector<float> > results_(results.size(), std::vector<float>(d));
+      for (int i = 0; i < results.size(); i++)
+      {
+          for (int j = 0; j < d; j++)
+          {
+              results_[i][j] = results[i][j];
+              // std::cout << results_[i][j] << " ";
+          }
+          // std::cout << std::endl;
+      }
+
+      for (unsigned i = 0; i < results.size(); i++)
+      {
+          unsigned dimension = (unsigned)results_[i].size();
+          out.write((char *)&dimension, sizeof(unsigned));
+          out.write((char *)results_[i].data(), dimension * sizeof(float));
+      }
+      out.close();
+  }
+
+  void save_labels(std::string filename, std::vector<unsigned> &results)
+  {
+      std::ofstream out(filename, std::ios::binary | std::ios::out);
+
+      unsigned results_size = (unsigned)results.size();
+      out.write((char *)&results_size, sizeof(unsigned));
+      out.write((char *)results.data(), results.size() * sizeof(unsigned));
+
+      out.close();
+  }
+
+
+  
   // @CS0522
   // 用于多线程的热点识别和热点更新
   void IndexWADG::identify_and_update(std::vector<const float*> old_query_list, 
@@ -383,7 +386,7 @@ namespace efanna2e
     //Tuple[0]: 返回的是数据集聚类中心的列表 (长度为 K)   
     //Tuple[1]: 返回的是输入数据集对应的标签 (归属于哪一个点)
     auto cluster_data = dkm::kmeans_lloyd(querys_in_vector, cluster_num);
-    auto cluster_centers = std::get<0>(cluster_data);
+    std::vector<std::vector<float> > cluster_centers = std::get<0>(cluster_data);
     auto labels = std::get<1>(cluster_data);
 
     // 将 std::array 转化回 float *

@@ -11,7 +11,9 @@ else()
     message(FATAL_ERROR "no OpenMP supprot")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free")
-add_definitions (-std=c++11 -O3 -lboost -march=native -Wall -DINFO)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
+
+add_definitions (-std=c++11 -O3 -lboost -pthread -march=native -Wall -DINFO)
 
 add_subdirectory(src)
 add_subdirectory(tests)

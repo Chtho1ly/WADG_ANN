@@ -4,3 +4,7 @@ dataset
 knn_graph
 nsg_graph
 search_result
+.idea/
+cmake-build-debug/
+anals/
+records/

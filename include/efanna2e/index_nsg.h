@@ -24,6 +24,8 @@ class IndexNSG : public Index {
   virtual void Save(const char *filename)override;
   virtual void Load(const char *filename)override;
 
+  // @CS0522
+  unsigned get_ep_() { return this->ep_; }
 
   virtual void Build(size_t n, const float *data, const Parameters &parameters) override;
 
@@ -39,6 +41,13 @@ class IndexNSG : public Index {
       const Parameters &parameters,
       unsigned *indices);
   void OptimizeGraph(float* data);
+
+  // @CS0522
+  std::vector<int> get_try_enter_retset_points_counts()
+  {
+    return this->try_enter_retset_points_counts;
+  }
+
 
   protected:
     typedef std::vector<std::vector<unsigned > > CompactGraph;
@@ -79,6 +88,10 @@ class IndexNSG : public Index {
     size_t data_len;
     size_t neighbor_len;
     KNNGraph nnd_graph;
+
+    // @CS0522
+    // 统计尝试加入 retset 的点的数量
+    std::vector<int> try_enter_retset_points_counts;
 };
 }
 

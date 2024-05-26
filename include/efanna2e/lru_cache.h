@@ -12,6 +12,7 @@
 
 namespace efanna2e
 {
+    // 
     class LRUCache
     {
         private:
@@ -39,7 +40,14 @@ namespace efanna2e
              * @msg: get the current size of LRU queue
              * @return {unsigned}: size
              */
-            unsigned get_size(); 
+            unsigned get_size();
+
+            /**
+             * @name: get_cache
+             * @msg: get the cache of LRU queue
+             * @return {unsigned}: cache
+             */
+             std::vector<unsigned> get_cache();
 
             /**
              * @name: add_to_head
@@ -87,6 +95,15 @@ namespace efanna2e
              * @return {*}
              */
             unsigned get(unsigned index);
+
+            /**
+            * @name: visit
+            * @msg: visit the id at the index position in LRU queue
+            *       without promoting it to the front
+            * @param {unsigned} index: target position
+            * @return {*}
+            */
+            unsigned visit(unsigned index);
 
             /**
              * @name: print_lru_cache
