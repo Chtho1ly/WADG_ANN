@@ -21,7 +21,7 @@
 // enable hot points
 #define HOT_POINTS true
 // nsg random points
-#define NSG_RANDOM true
+#define NSG_RANDOM false
 
 namespace efanna2e {
 

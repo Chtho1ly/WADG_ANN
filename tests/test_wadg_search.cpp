@@ -5,6 +5,8 @@
 #include "efanna2e/index_wadg.h"
 #include "efanna2e/util.h"
 
+#include <fstream>
+
 void load_data(char *filename, float *&data, unsigned &num,
                unsigned &dim)
 { // load data with sift10K pattern
@@ -70,6 +72,17 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
+  // DEBUG
+  // 放这里是因为 Set_lru()
+  // redirect I/O stream
+  std::ofstream fout("./anals/wadg_output/wadg_result.txt");
+	std::streambuf *cout_bak;
+  if (DEBUG)
+  {
+    // rdbuf() 重新定向，返回旧缓冲区指针
+	  cout_bak = std::cout.rdbuf(fout.rdbuf());
+  }
+
   // data_load = efanna2e::data_align(data_load, points_num, dim);//one must
   // align the data before build query_load = efanna2e::data_align(query_load,
   // query_num, query_dim);
@@ -89,23 +102,41 @@ int main(int argc, char **argv)
   auto s = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<unsigned>> res;
 
-  for (unsigned i = 0; i < query_num; i++)
+  for (unsigned i = 0; i < 1000; i++)
   {
+    // DEBUG
+    // redirect I/O stream
+    std::ofstream fout("./anals/wadg_output/wadg_query_" + std::to_string(i) + ".txt");
+	  std::streambuf *cout_bak;
+    if (DEBUG)
+    {
+      // rdbuf() 重新定向，返回旧缓冲区指针
+	    cout_bak = std::cout.rdbuf(fout.rdbuf());
+    }
+    
     std::vector<unsigned> tmp(K);
     // @CS0522
     // 指向 vector 内部的指针
     unsigned *tmp_ = tmp.data();
     index.Search(query_load + i * dim, paras, tmp_, HOT_POINTS);
     res.push_back(tmp);
+
+    // DEBUG
+    // recover I/O stream
+    if (DEBUG)
+    {
+	    std::cout.rdbuf(cout_bak);
+	    fout.close();
+    }
   }
   auto e = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> diff = e - s;
-  std::cout << "search time: " << diff.count() << "\n";
+  // std::cout << "search time: " << diff.count() << "\n";
 
   // print infos
   if (PRINT_INFO)
   {
-    printf("==========\n");
+    std::cout << "\n==========\n" << std::endl;
     std::cout << "更新窗口次数: " << index.get_window_count() << std::endl;
     std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
 
@@ -121,19 +152,45 @@ int main(int argc, char **argv)
     // DEBUG
     if (DEBUG)
     {
-      std::cout << "主 Search 中尝试加入 retset 的点数量: " << std::endl;
+      std::cout << "\n===== DEBUG =====\n" << std::endl;
+      std::cout << "主 Search 中检索点数量: " << std::endl;
       auto counts = index.get_try_enter_retset_points_counts();
       int total_counts = 0;
+      std::cout << "Each query (total " << counts.size() << " queries): " << std::endl;
       for (int i = 0; i < counts.size(); i++)
       {
+        // calculate total counts
         total_counts += counts[i];
+        // print each count
+        std::cout << counts[i] << " ";
       }
-      std::cout << "Total(for " << counts.size() << " queries): " << total_counts << std::endl;
+      std::cout << "\nTotal (for " << counts.size() << " queries): " << total_counts << std::endl;
+      std::cout << "Max count: " << *std::max_element(counts.begin(), counts.end()) << std::endl << std::endl;
+
+      std::cout << "主 Search 中最长搜索路径: " << std::endl;
+      auto lengths = index.get_max_search_lengths();
+      int total_lengths = 0;
+      std::cout << "Each query (total " << lengths.size() << " queries): " << std::endl;
+      for (int i = 0; i < lengths.size(); i++)
+      {
+        total_lengths += lengths[i];
+        std::cout << lengths[i] << " ";
+      }
+      std::cout << "\nTotal (for " << lengths.size() << " queries): " << total_lengths << std::endl;
+      std::cout << "Max length: " << *std::max_element(lengths.begin(), lengths.end()) << std::endl << std::endl;
     }
-    printf("==========\n");
+    std::cout << "===== END =====\n";
   }
 
   save_result(argv[6], res);
+
+  // DEBUG
+  // recover I/O stream
+  if (DEBUG)
+  {
+	  std::cout.rdbuf(cout_bak);
+	  fout.close();
+  }
 
   return 0;
 }

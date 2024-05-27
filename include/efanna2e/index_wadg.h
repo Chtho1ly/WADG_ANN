@@ -81,6 +81,11 @@ namespace efanna2e
             return this->try_enter_retset_points_counts;
         }
 
+        std::vector<int> get_max_search_lengths()
+        {
+            return this->max_search_lengths;
+        }
+
     protected:
         // 记录搜索请求
         // 若请求记录窗口已满则进行热点更新，并删除旧的记录
@@ -122,8 +127,14 @@ namespace efanna2e
         int update_hot_points_count = 0;
         // 记录经过了几个时间窗口
         int window_count = 0;
-        // 记录每次主 Search 的尝试加入候选队列的点的数量
+        // 记录每次主 Search 的检索点数量
         std::vector<int> try_enter_retset_points_counts;
+        // 记录每次主 Search 的最长搜索路径
+        std::vector<int> max_search_lengths;
+
+        // 记录前驱的 pre 数组
+        // 这里想初始化值为 -1，所以用 int。int 范围应该是够 sift 的
+        int *pre;
     };
 }
 
