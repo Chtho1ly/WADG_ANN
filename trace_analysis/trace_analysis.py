@@ -246,7 +246,7 @@ def cal_combined_ratios(queries, bases, n_clusters, cluster_method='k-means'):
     return (ratio1_list, ratio2_list, ratio3_list, ratio4_list, cluster_sizes)
 
 
-def cal_combined_ratios_56(kmeans:KMeans, curr_query: np.ndarray, groundtruths: np.ndarray, bases: np.ndarray, n_clusters, cluster_method='k-means'):
+def cal_combined_ratios_56(kmeans:KMeans, curr_query, groundtruths, bases, n_clusters, cluster_method='k-means'):
     cluster_centers = kmeans.cluster_centers_
     labels = kmeans.labels_
 
@@ -421,9 +421,11 @@ def process_files(trace_source_list, expts: list):
                 queries_to_cluster = []
                 # 存储 kmeans
                 kmeans_list = []
+                # modify base vectors
+                base_vectors = np.array(base_vectors)
                 # 顺序处理每个 query
                 # for i in range(len(query_vectors)):
-                for i in range(400):
+                for i in range(1000):
                     # 当前 query
                     curr_query = query_vectors[i]
 
@@ -432,19 +434,19 @@ def process_files(trace_source_list, expts: list):
                         # 计算 KMeans
                         cluster_num = (i + 1) // 10
                         kmeans = KMeans(n_clusters = cluster_num)
-                        kmeans.fit(np.array(queries_to_cluster))
+                        kmeans.fit(queries_to_cluster)
                         kmeans_list.append(kmeans)
 
                     # 当聚类一次后开始计算
                     if (i >= 99):
                         # groundtruth: list
-                        curr_groundtruths = np.array(base_vectors).take(groundtruth_vectors[i], axis = 0)
+                        curr_groundtruths = base_vectors.take(groundtruth_vectors[i], axis = 0)
                         print(f"{trace_name}: curr_query={i}, cluster_num={cluster_num}")
 
                         ratio5, ratio6, groundtruth_size = cal_combined_ratios_56(kmeans_list[(i + 1) // 100 - 1], 
-                                                                                   np.array(curr_query), 
-                                                                                   np.array(curr_groundtruths), 
-                                                                                   np.array(base_vectors), cluster_num)
+                                                                                   curr_query, 
+                                                                                   curr_groundtruths, 
+                                                                                   base_vectors, cluster_num)
                         ratio5_list.append(ratio5)
                         ratio6_list.append(ratio6)
                         x_coords.append(i + 1)
@@ -479,7 +481,7 @@ if __name__ == "__main__":
         # 't2i.yandex',
         # 'spacev.ms',
         'gist.bigann',
-        # 'sift.bigann',
+        'sift.bigann',
         ]
     # [查询距离-结果重合率散点图 + 魔改轮廓系数 + 重用距离cdf, 空间局部性实验1234，空间局部性实验56]
     process_files(trace_source_list, [False, False, True])
