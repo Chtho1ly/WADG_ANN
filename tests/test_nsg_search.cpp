@@ -82,40 +82,98 @@ int main(int argc, char **argv)
 
   auto s = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<unsigned>> res;
-  for (unsigned i = 0; i < query_num; i++)
+
+  std::string file_path = NSG_RANDOM ? "nsg_w_output" : "nsg_wo_output";
+
+  for (unsigned i = 0; i < 1000; i++)
   {
+    // DEBUG
+    // redirect I/O stream
+    std::ofstream fout("./anals/" + file_path + "/nsg_query_" + std::to_string(i) + ".txt");
+	  std::streambuf *cout_bak;
+    if (DEBUG)
+    {
+      // rdbuf() 重新定向，返回旧缓冲区指针
+	    cout_bak = std::cout.rdbuf(fout.rdbuf());
+    }
+
     std::vector<unsigned> tmp(K);
     index.Search(query_load + i * dim, data_load, K, paras, tmp.data());
     res.push_back(tmp);
+
+    // DEBUG
+    // recover I/O stream
+    if (DEBUG)
+    {
+	    std::cout.rdbuf(cout_bak);
+	    fout.close();
+    }
   }
   auto e = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> diff = e - s;
-  std::cout << "search time: " << diff.count() << "\n";
+  // std::cout << "search time: " << diff.count() << "\n";
+
+  // DEBUG
+  // redirect I/O stream
+  std::ofstream fout("./anals/" + file_path + "/nsg_result.txt");
+	std::streambuf *cout_bak;
+  if (DEBUG)
+  {
+    // rdbuf() 重新定向，返回旧缓冲区指针
+	  cout_bak = std::cout.rdbuf(fout.rdbuf());
+  }
 
   // print search infos
   if (PRINT_INFO)
   {
-    printf("==========\n");
+    std::cout << "\n==========\n" << std::endl;
     // print hyper parameters
-    std::cout << "Q = " << L
+    std::cout << "Hyperparameters: "
+              << "Q = " << L
               << ", K = " << K << std::endl;
 
     // DEBUG
     if (DEBUG)
     {
-      std::cout << "主 Search 中尝试加入 retset 的点数量: " << std::endl;
-      auto counts = index.get_try_enter_retset_points_counts();
+      std::cout << "\n===== DEBUG: " << (NSG_RANDOM ? "w/ random" : "w/o random") << " =====\n" << std::endl;
+      std::cout << "Search points in Search: " << std::endl;
+      auto counts = index.get_search_points_counts();
       int total_counts = 0;
+      std::cout << "Each query (total " << counts.size() << " queries): " << std::endl;
       for (int i = 0; i < counts.size(); i++)
       {
+        // calculate total counts
         total_counts += counts[i];
+        // print each count
+        std::cout << counts[i] << " ";
       }
-      std::cout << "Total(for " << counts.size() << " queries): " << total_counts << std::endl;
+      std::cout << "\nTotal (for " << counts.size() << " queries): " << total_counts << std::endl;
+      std::cout << "Max count: " << *std::max_element(counts.begin(), counts.end()) << std::endl << std::endl;
+
+      std::cout << "Max search length in Search: " << std::endl;
+      auto lengths = index.get_max_search_lengths();
+      int total_lengths = 0;
+      std::cout << "Each query (total " << lengths.size() << " queries): " << std::endl;
+      for (int i = 0; i < lengths.size(); i++)
+      {
+        total_lengths += lengths[i];
+        std::cout << lengths[i] << " ";
+      }
+      std::cout << "\nTotal (for " << lengths.size() << " queries): " << total_lengths << std::endl << std::endl;
+      std::cout << "Max length: " << *std::max_element(lengths.begin(), lengths.end()) << std::endl << std::endl;
     }
-    printf("==========\n");
+    std::cout << "===== END =====\n";
   }
 
   save_result(argv[6], res);
+
+  // DEBUG
+  // recover I/O stream
+  if (DEBUG)
+  {
+	  std::cout.rdbuf(cout_bak);
+	  fout.close();
+  }
 
   return 0;
 }

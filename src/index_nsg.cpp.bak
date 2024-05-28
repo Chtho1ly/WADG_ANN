@@ -482,7 +482,7 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
   // greedy search
   int k = 0;
   // 统计尝试加入 retset 的点的数量
-  int try_enter_retset_points_count = 0;
+  int search_points_count = 0;
   while (k < (int)L) {
     int nk = L;
 
@@ -498,7 +498,7 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
             distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
         if (dist >= retset[L - 1].distance) continue;
         // 统计尝试加入 retset 的点的数量
-        ++try_enter_retset_points_count;
+        ++search_points_count;
         Neighbor nn(id, dist, true);
         int r = InsertIntoPool(retset.data(), L, nn);
 
@@ -515,7 +515,7 @@ void IndexNSG::Search(const float *query, const float *x, size_t K,
     indices[i] = retset[i].id;
   }
 
-  this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+  this->search_points_counts.push_back(search_points_count);
 }
 
 void IndexNSG::SearchWithOptGraph(const float *query, size_t K,

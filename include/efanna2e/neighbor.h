@@ -7,6 +7,9 @@
 #ifndef EFANNA2E_GRAPH_H
 #define EFANNA2E_GRAPH_H
 
+// @CS0522
+// 引入 DEBUG
+#include "index.h"
 #include <cstddef>
 #include <vector>
 #include <mutex>
@@ -421,6 +424,11 @@ static inline int InsertIntoPool(std::vector<Neighbor> &retset, unsigned K, Neig
     // 实际不会进入这个 if 分支
     if(retset[right].distance < new_nn.distance)
     {
+        // DEBUG
+        if (DEBUG)
+        {
+            std::cout << "进入了 right.dist < new_nn.dist 分支" << std::endl;
+        }
         retset.insert(retset.begin() + K, new_nn);
         return K;
     }
