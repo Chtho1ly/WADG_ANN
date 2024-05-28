@@ -561,11 +561,11 @@ namespace efanna2e
       // 导航点
       if (DEBUG)
       {
-        std::cout << std::endl << "===== DEBUG: Search for query " << try_enter_retset_points_counts.size() << " =====\n" << std::endl;
-        std::cout << "导航点: " << std::endl;
+        std::cout << std::endl << "===== DEBUG: Search for query " << search_points_counts.size() << " =====\n" << std::endl;
+        std::cout << "Navigate node: " << std::endl;
         std::cout << "id: " << std::setw(6) << ep_ << ", dis: " << std::setw(6)
                   << distance_->compare(query, data_ + dimension_ * ep_, (unsigned)dimension_) << std::endl << std::endl;
-        std::cout << "导航点的全部邻居: " << std::endl;
+        std::cout << "Neighbor points of navigate node: " << std::endl;
       }
 
       // 将导航点的全部邻居放入init_ids
@@ -590,7 +590,7 @@ namespace efanna2e
       // DEBUG
       if (DEBUG)
       {
-        std::cout << std::endl << "随机补点前初始 init_ids (长度为 " << tmp_l << "): " << std::endl;
+        std::cout << std::endl << "Initial init_ids before random (length = " << tmp_l << "): " << std::endl;
         for (int i = 0; i < tmp_l; ++i)
         {
           std::cout << "id: " << std::setw(6) << init_ids[i] << ", dis: " 
@@ -624,7 +624,7 @@ namespace efanna2e
       // DEBUG
       if (DEBUG)
       {
-        std::cout << std::endl << "随机补点后初始 retset (长度为 " << retset.size() << "): " << std::endl;
+        std::cout << std::endl << "Initial retset after random and sort (length = " << retset.size() << "): " << std::endl;
         for (int i = 0; i < retset.size(); ++i)
         {
           std::cout << "id: " << std::setw(6) << retset[i].id << ", dis: " << std::setw(6) << retset[i].distance << std::endl;
@@ -638,7 +638,7 @@ namespace efanna2e
       // greedy search
       int k = 0;
       // 统计尝试加入 retset 的点的数量
-      int try_enter_retset_points_count = retset.size();
+      int search_points_count = retset.size();
       while (k < (int)L)
       {
         int nk = L;
@@ -673,16 +673,16 @@ namespace efanna2e
             flags[id] = 1;
             float dist =
                 distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-            if (dist >= retset[L - 1].distance)
-              continue;
-            
+
             // DEBUG
             // 统计尝试加入 retset 的点的数量
             if (DEBUG)
             {
-              ++try_enter_retset_points_count;
+              ++search_points_count;
             }
-
+            
+            if (dist >= retset[L - 1].distance)
+              continue;
             Neighbor nn(id, dist, true);
             int r = InsertIntoPool(retset.data(), L, nn);
 
@@ -714,12 +714,14 @@ namespace efanna2e
       if (DEBUG)
       {
         auto max_len = std::max_element(mlen, mlen + 1000000);
-        std::cout << std::endl << "本次搜索最长路径: " << *max_len << std::endl;
+        // std::cout << std::endl << "Max search length of current query: " << *max_len << std::endl;
+        std::cout << std::endl << *max_len << std::endl;
         this->max_search_lengths.push_back(*max_len);
 
         // 尝试加入 retset 的点的数量
-        std::cout << "本次搜索点数量: " << try_enter_retset_points_count << std::endl;
-        this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+        // std::cout << "Search points count of current query: " << search_points_count << std::endl;
+        std::cout << search_points_count << std::endl;
+        this->search_points_counts.push_back(search_points_count);
       }
     }
 
@@ -738,11 +740,11 @@ namespace efanna2e
       // 导航点
       if (DEBUG)
       {
-        std::cout << std::endl << "===== DEBUG: Search for query " << try_enter_retset_points_counts.size() << " =====\n" << std::endl;
-        std::cout << "导航点: " << std::endl;
+        std::cout << std::endl << "===== DEBUG: Search for query " << search_points_counts.size() << " =====\n" << std::endl;
+        std::cout << "Navigate node: " << std::endl;
         std::cout << "id: " << std::setw(6) << ep_ << ", dis: " << std::setw(6)
                   << distance_->compare(query, data_ + dimension_ * ep_, (unsigned)dimension_) << std::endl << std::endl;
-        std::cout << "导航点的全部邻居: " << std::endl;
+        std::cout << "Neighbor points of navigate node: " << std::endl;
       }
 
       // 将导航点的全部邻居放入init_ids
@@ -785,7 +787,7 @@ namespace efanna2e
       // DEBUG
       if (DEBUG)
       {
-        std::cout << std::endl << "不进行随机补点的初始 retset (长度为 " << retset.size() << "): " << std::endl;
+        std::cout << std::endl << "Initial retset without random after sort (length = " << retset.size() << "): " << std::endl;
         for (int i = 0; i < retset.size(); ++i)
         {
           std::cout << "id: " << std::setw(6) << retset[i].id << ", dis: " << std::setw(6) << retset[i].distance << std::endl;
@@ -799,7 +801,7 @@ namespace efanna2e
       // greedy search
       int k = 0;
       // 统计尝试加入 retset 的点的数量
-      int try_enter_retset_points_count = retset.size();
+      int search_points_count = retset.size();
       while (k < (int)L)
       {
         int nk = (L < retset.size()) ? L : retset.size();
@@ -834,16 +836,16 @@ namespace efanna2e
             flags[id] = 1;
             float dist =
                 distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-            if (dist >= retset[(L < retset.size() ? L : retset.size()) - 1].distance)
-              continue;
 
             // DEBUG
             // 统计尝试加入 retset 的点的数量
             if (DEBUG)
             {
-              ++try_enter_retset_points_count;
+              ++search_points_count;
             }
-            
+
+            if (dist >= retset[(L < retset.size() ? L : retset.size()) - 1].distance)
+              continue;
             Neighbor nn(id, dist, true);
             // int r = InsertIntoPool(retset.data(), L, nn);
             auto r = InsertIntoPool(retset, (L < retset.size()) ? L : retset.size(), nn);
@@ -876,12 +878,14 @@ namespace efanna2e
       if (DEBUG)
       {
         auto max_len = std::max_element(mlen, mlen + 1000000);
-        std::cout << std::endl << "本次搜索最长路径: " << *max_len << std::endl;
+        // std::cout << std::endl << "Max search length of current query: " << *max_len << std::endl;
+        std::cout << std::endl << *max_len << std::endl;
         this->max_search_lengths.push_back(*max_len);
 
         // 尝试加入 retset 的点的数量
-        std::cout << "本次搜索点数量: " << try_enter_retset_points_count << std::endl;
-        this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+        // std::cout << "Search points count of current query: " << search_points_count << std::endl;
+        std::cout << search_points_count << std::endl;
+        this->search_points_counts.push_back(search_points_count);
       }
     }
   }

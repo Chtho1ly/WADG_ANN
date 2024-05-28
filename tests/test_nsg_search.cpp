@@ -128,7 +128,7 @@ int main(int argc, char **argv)
   {
     std::cout << "\n==========\n" << std::endl;
     // print hyper parameters
-    std::cout << "超参数: "
+    std::cout << "Hyperparameters: "
               << "Q = " << L
               << ", K = " << K << std::endl;
 
@@ -136,8 +136,8 @@ int main(int argc, char **argv)
     if (DEBUG)
     {
       std::cout << "\n===== DEBUG: " << (NSG_RANDOM ? "w/ random" : "w/o random") << " =====\n" << std::endl;
-      std::cout << "Search 中检索点数量: " << std::endl;
-      auto counts = index.get_try_enter_retset_points_counts();
+      std::cout << "Search points in Search: " << std::endl;
+      auto counts = index.get_search_points_counts();
       int total_counts = 0;
       std::cout << "Each query (total " << counts.size() << " queries): " << std::endl;
       for (int i = 0; i < counts.size(); i++)
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
       std::cout << "\nTotal (for " << counts.size() << " queries): " << total_counts << std::endl;
       std::cout << "Max count: " << *std::max_element(counts.begin(), counts.end()) << std::endl << std::endl;
 
-      std::cout << "Search 中最长搜索路径: " << std::endl;
+      std::cout << "Max search length in Search: " << std::endl;
       auto lengths = index.get_max_search_lengths();
       int total_lengths = 0;
       std::cout << "Each query (total " << lengths.size() << " queries): " << std::endl;

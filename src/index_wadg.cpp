@@ -30,13 +30,13 @@ namespace efanna2e
       : IndexNSG(dimension, n, m, initializer) 
       {
         // 初始化 max_hot_points_num
-        max_hot_points_num = 300;
+        max_hot_points_num = 200;
         // 初始化 window_size 搜索请求记录窗口大小
         // window_size >= cluster_num
-        window_size = 1000;
+        window_size = 100;
         // 初始化 cluster_num 聚类中心数
         // 主要影响因素
-        cluster_num = 200;
+        cluster_num = 10;
 
         // DEBUG
         // 初始化 pre 数组
@@ -79,9 +79,9 @@ namespace efanna2e
       if (DEBUG)
       {
         std::cout << "\n===== DEBUG: LRU Init =====\n" << std::endl;
-        std::cout << "导航点: " << std::endl;
+        std::cout << "Navigate node: " << std::endl;
         std::cout << "id: " << ep << std::endl << std::endl;
-        std::cout << "导航点的全部邻居: " << std::endl;
+        std::cout << "Neighbor points of navigate node: " << std::endl;
       }
       for (unsigned i = 0; i < max_hot_points_num && i < final_graph_[ep].size(); i++)
       {
@@ -97,7 +97,7 @@ namespace efanna2e
       {
         std::cout << std::endl;
         // print lru
-        std::cout << "\n初始 LRU 队列: " << std::endl;
+        std::cout << "\nInitial LRU: " << std::endl;
         hot_points_lru->print_lru_cache();
       }
       // 与 nsg 中 init_ids 加入的导航点一致
@@ -196,9 +196,9 @@ namespace efanna2e
     if (DEBUG && record_query_flag == true)
     {
       std::cout << std::endl << "====== DEBUG: Search for query " 
-                << this->try_enter_retset_points_counts.size() << " =====" << std::endl;
-      std::cout << "\n热点 (前 100 个): " << std::endl;
-      int num = 100 < hot_points_lru->get_size() ? 100 : hot_points_lru->get_size();
+                << this->search_points_counts.size() << " =====" << std::endl;
+      std::cout << "\nHot points: " << std::endl;
+      int num = hot_points_lru->get_size();
       for (int i = 0; i < num; ++i)
       {
         unsigned id = hot_points_lru->visit(i);
@@ -206,7 +206,7 @@ namespace efanna2e
         std::cout << "id: " << std::setw(6) << id << ", dis: " << std::setw(6) << dist << std::endl;
       }
       std::cout << std::endl;
-      std::cout << "初始 retset (长度为 " << retset.size() << "): " << std::endl;
+      std::cout << "Initial retset (length = " << retset.size() << "): " << std::endl;
       for (int i = 0; i < retset.size(); ++i)
       {
         std::cout << "id: " << std::setw(6) << retset[i].id << ", dis: " << std::setw(6) << retset[i].distance << std::endl;
@@ -220,8 +220,9 @@ namespace efanna2e
 
     // greedy search
     int k = 0;
-    // 尝试加入 retset 的点的数量
-    int try_enter_retset_points_count = retset.size();
+    // 检索点数量
+    // LRU 都计算了一遍
+    int search_points_count = pairs.size();
     while (k < (int)L)
     {
         int len = (L < retset.size()) ? L : retset.size();
@@ -259,20 +260,21 @@ namespace efanna2e
                 flags[id] = 1;
                 float dist =
                         distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-                if (dist >= retset[len - 1].distance)
-                {
-                    continue;
-                }
 
                 // DEBUG
-                // 统计尝试加入 retset 的点的数量
+                // 统计检索点数量
                 // 开启热点识别且为主 Search 或 未开启热点识别
                 if (DEBUG)
                 {
                   if ((HOT_POINTS && record_query_flag == true) || !HOT_POINTS)
                   {
-                    ++try_enter_retset_points_count;
+                    ++search_points_count;
                   }
+                }
+
+                if (dist >= retset[len - 1].distance)
+                {
+                    continue;
                 }
 
                 Neighbor nn(id, dist, true);
@@ -319,19 +321,21 @@ namespace efanna2e
     if (DEBUG && record_query_flag == true)
     {
       auto max_len = std::max_element(mlen, mlen + 1000000);
-      std::cout << std::endl << "本次搜索最长路径: " << *max_len << std::endl;
+      // std::cout << std::endl << "Max search length of current query: " << *max_len << std::endl;
+      std::cout << std::endl << *max_len << std::endl;
       this->max_search_lengths.push_back(*max_len);
     }
 
     // DEBUG
-    // 统计尝试加入 retset 的点的数量
+    // 统计检索点数量
     // 开启热点识别且为主 Search 或 未开启热点识别
     if (DEBUG)
     {
       if (!HOT_POINTS || (HOT_POINTS && record_query_flag == true))
       {
-        std::cout << "本次搜索点数量: " << try_enter_retset_points_count << std::endl;
-        this->try_enter_retset_points_counts.push_back(try_enter_retset_points_count);
+        // std::cout << "Search points count of current query: " << search_points_count << std::endl;
+        std::cout << search_points_count << std::endl;
+        this->search_points_counts.push_back(search_points_count);
       }
     }
     

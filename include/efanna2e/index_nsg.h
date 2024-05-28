@@ -43,9 +43,9 @@ class IndexNSG : public Index {
   void OptimizeGraph(float* data);
 
   // @CS0522
-  std::vector<int> get_try_enter_retset_points_counts()
+  std::vector<int> get_search_points_counts()
   {
-    return this->try_enter_retset_points_counts;
+    return this->search_points_counts;
   }
 
   std::vector<int> get_max_search_lengths()
@@ -95,7 +95,7 @@ class IndexNSG : public Index {
 
     // @CS0522
     // 记录每次 Search 的检索点数量
-    std::vector<int> try_enter_retset_points_counts;
+    std::vector<int> search_points_counts;
 
     // 记录每次 Search 的最长搜索路径
     std::vector<int> max_search_lengths;

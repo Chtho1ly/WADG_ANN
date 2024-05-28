@@ -137,12 +137,12 @@ int main(int argc, char **argv)
   if (PRINT_INFO)
   {
     std::cout << "\n==========\n" << std::endl;
-    std::cout << "更新窗口次数: " << index.get_window_count() << std::endl;
-    std::cout << "更新热点次数: " << index.get_update_hot_points_count() << std::endl;
+    std::cout << "Update window times: " << index.get_window_count() << std::endl;
+    std::cout << "Update hot points times: " << index.get_update_hot_points_count() << std::endl;
 
     // print hyper parameters
     auto hyperparams = index.get_hyperparams();
-    std::cout << "超参数: "
+    std::cout << "Hyperparameters: "
               << "W = " << std::get<0>(hyperparams)
               << ", C = " << std::get<1>(hyperparams)
               << ", Q = " << L
@@ -153,8 +153,8 @@ int main(int argc, char **argv)
     if (DEBUG)
     {
       std::cout << "\n===== DEBUG =====\n" << std::endl;
-      std::cout << "主 Search 中检索点数量: " << std::endl;
-      auto counts = index.get_try_enter_retset_points_counts();
+      std::cout << "Search points count in main Search: " << std::endl;
+      auto counts = index.get_search_points_counts();
       int total_counts = 0;
       std::cout << "Each query (total " << counts.size() << " queries): " << std::endl;
       for (int i = 0; i < counts.size(); i++)
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
       std::cout << "\nTotal (for " << counts.size() << " queries): " << total_counts << std::endl;
       std::cout << "Max count: " << *std::max_element(counts.begin(), counts.end()) << std::endl << std::endl;
 
-      std::cout << "主 Search 中最长搜索路径: " << std::endl;
+      std::cout << "Max search length in main Search: " << std::endl;
       auto lengths = index.get_max_search_lengths();
       int total_lengths = 0;
       std::cout << "Each query (total " << lengths.size() << " queries): " << std::endl;
