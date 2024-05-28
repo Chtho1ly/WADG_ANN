@@ -214,7 +214,6 @@ namespace efanna2e
         pre[retset[i].id] = get_ep_();
         mlen[retset[i].id] = 1;
       }
-      // std::cout << std::endl << std::endl << "开始检索...";
       std::cout << std::endl << "===== DEBUG: Greedy search =====\n" << std::endl;
     }
 
@@ -240,7 +239,6 @@ namespace efanna2e
               std::cout << "Level: " << std::setw(2) << mlen[n] << " - "
                         << "id: " << std::setw(6) << n << ", dis: " 
                         << std::setw(6) << dist << ", pre: " << std::setw(6) << pre[n] << " " << std::endl; 
-              // std::cout << "加入 retset 的邻居点: " << std::endl;
             }
 
             for (unsigned m = 0; m < final_graph_[n].size(); ++m)

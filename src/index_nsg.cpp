@@ -655,7 +655,6 @@ namespace efanna2e
             std::cout << "Level: " << std::setw(2) << mlen[n] << " - "
                       << "id: " << std::setw(6) << n << ", dis: " 
                       << std::setw(6) << dist << ", pre: " << std::setw(6) << pre[n] << " " << std::endl; 
-            // std::cout << "加入 retset 的邻居点: " << std::endl;
           }
 
           for (unsigned m = 0; m < final_graph_[n].size(); ++m)
@@ -675,7 +674,7 @@ namespace efanna2e
                 distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
 
             // DEBUG
-            // 统计尝试加入 retset 的点的数量
+            // 统计检索点数量
             if (DEBUG)
             {
               ++search_points_count;
@@ -710,7 +709,7 @@ namespace efanna2e
       }
 
       // DEBUG
-      // 记录本次 Search 的最长搜索路径
+      // 记录最长搜索路径和检索点数量
       if (DEBUG)
       {
         auto max_len = std::max_element(mlen, mlen + 1000000);
@@ -718,7 +717,6 @@ namespace efanna2e
         std::cout << std::endl << *max_len << std::endl;
         this->max_search_lengths.push_back(*max_len);
 
-        // 尝试加入 retset 的点的数量
         // std::cout << "Search points count of current query: " << search_points_count << std::endl;
         std::cout << search_points_count << std::endl;
         this->search_points_counts.push_back(search_points_count);
@@ -818,7 +816,6 @@ namespace efanna2e
             std::cout << "Level: " << std::setw(2) << mlen[n] << " - "
                       << "id: " << std::setw(6) << n << ", dis: " 
                       << std::setw(6) << dist << ", pre: " << std::setw(6) << pre[n] << " " << std::endl; 
-            // std::cout << "加入 retset 的邻居点: " << std::endl;
           }
 
           for (unsigned m = 0; m < final_graph_[n].size(); ++m)
@@ -838,7 +835,7 @@ namespace efanna2e
                 distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
 
             // DEBUG
-            // 统计尝试加入 retset 的点的数量
+            // 统计检索点数量
             if (DEBUG)
             {
               ++search_points_count;
@@ -874,7 +871,7 @@ namespace efanna2e
       }
       
       // DEBUG
-      // 记录本次 Search 的最长搜索路径
+      // 记录最长搜索路径和检索点数量
       if (DEBUG)
       {
         auto max_len = std::max_element(mlen, mlen + 1000000);
@@ -882,7 +879,6 @@ namespace efanna2e
         std::cout << std::endl << *max_len << std::endl;
         this->max_search_lengths.push_back(*max_len);
 
-        // 尝试加入 retset 的点的数量
         // std::cout << "Search points count of current query: " << search_points_count << std::endl;
         std::cout << search_points_count << std::endl;
         this->search_points_counts.push_back(search_points_count);
