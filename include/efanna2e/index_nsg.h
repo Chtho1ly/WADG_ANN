@@ -92,17 +92,6 @@ class IndexNSG : public Index {
     size_t data_len;
     size_t neighbor_len;
     KNNGraph nnd_graph;
-
-    // @CS0522
-    // 记录每次 Search 的检索点数量
-    std::vector<int> search_points_counts;
-
-    // 记录每次 Search 的最长搜索路径
-    std::vector<int> max_search_lengths;
-
-    // 记录前驱的 pre 数组
-    // 这里想初始化值为 -1，所以用 int。int 范围应该是够 sift 的
-    int *pre;
 };
 }
 

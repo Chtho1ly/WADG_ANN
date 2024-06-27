@@ -52,8 +52,7 @@ namespace efanna2e
         virtual void Search(
             const float *query,
             const Parameters &parameters,
-            unsigned* &indices,
-            bool record_query_flag);
+            unsigned* &indices);
 
         virtual void Set_data(const float *x);
 
@@ -63,11 +62,6 @@ namespace efanna2e
         int get_update_hot_points_count()
         {
             return this->update_hot_points_count;
-        }
-
-        int get_window_count()
-        {
-            return this->window_count;
         }
 
         std::tuple<unsigned, unsigned, unsigned> get_hyperparams()
@@ -91,23 +85,8 @@ namespace efanna2e
         // 若请求记录窗口已满则进行热点更新，并删除旧的记录
         virtual void record_query(const float *query);
         // 更新热点
-        virtual void update_hot_points(std::vector<std::vector<unsigned> > &search_res);
-        // 通过K-means获取搜索请求的聚类中心
-        virtual std::vector<float *> get_cluster_centers(
-            std::vector<const float *> querys,
-            const Parameters &parameters,
-            unsigned num);
-        // @CS0522
-        // 多线程
-        // 用于热点识别和热点更新
-        /**
-         * old_query_list 用于复制一份 query_list，
-         * 防止 Search 和 get_cluster_centers 同时修改 query_list
-        */
-        virtual void identify_and_update(
-            std::vector<const float*> old_query_list, 
-            const Parameters &parameters,
-            bool record_query_flag);
+        // virtual void update_hot_points(std::vector<std::vector<unsigned> > &search_res);
+        virtual void update_hot_point(unsigned hot_point_id);
 
     private:
         unsigned max_hot_points_num;          // 最大热点数
@@ -117,24 +96,11 @@ namespace efanna2e
         // @CS0522
         LRUCache *hot_points_lru;             // 包含全部有效热点id的LRU队列
         // @CS0522
-        std::mutex mtx_lru;                   // LRU 队列的互斥锁
-        // @CS0522
         // "float *" -> "const float *"
         std::vector<const float *> query_list;      // 窗口内搜索请求记录
-        std::mutex mtx_query_list;
 
         // 记录更新热点次数
         int update_hot_points_count = 0;
-        // 记录经过了几个时间窗口
-        int window_count = 0;
-        // 记录每次主 Search 的检索点数量
-        std::vector<int> search_points_counts;
-        // 记录每次主 Search 的最长搜索路径
-        std::vector<int> max_search_lengths;
-
-        // 记录前驱的 pre 数组
-        // 这里想初始化值为 -1，所以用 int。int 范围应该是够 sift 的
-        int *pre;
     };
 }
 
