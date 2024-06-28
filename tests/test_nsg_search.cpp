@@ -222,34 +222,6 @@ int main(int argc, char **argv)
                 << ", K (nearest neighbor) = " << K << std::endl;
       std::cout << "Random: " << (NSG_RANDOM ? "enabled" : "disabled") << std::endl;
 
-      // 每次搜索的点数
-      std::cout << "\nSearch points in Search: " << std::endl;
-      auto counts = index.get_search_points_counts();
-      int total_counts = 0;
-      for (int i = 0; i < counts.size(); i++)
-      {
-        // calculate total counts
-        total_counts += counts[i];
-      }
-      // 总的搜索点数，可以看平均值
-      std::cout << "Total (for " << counts.size() << " queries): " << total_counts << std::endl;
-      // 最大值
-      std::cout << "Max count: " << *std::max_element(counts.begin(), counts.end()) << std::endl
-                << std::endl;
-
-      // 每次搜索的最长路径
-      std::cout << "Max search length in Search: " << std::endl;
-      auto lengths = index.get_max_search_lengths();
-      int total_lengths = 0;
-      for (int i = 0; i < lengths.size(); i++)
-      {
-        total_lengths += lengths[i];
-      }
-      // 总的最长搜索路径，可以看平均值
-      std::cout << "Total (for " << lengths.size() << " queries): " << total_lengths << std::endl;
-      // 最大值
-      std::cout << "Max length: " << *std::max_element(lengths.begin(), lengths.end()) << std::endl;
-
       std::cout << "\n===== END =====\n";
     }
 

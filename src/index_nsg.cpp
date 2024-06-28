@@ -20,17 +20,17 @@ namespace efanna2e
   {
     // @CS0522
     // DEBUG
-    // 初始化 pre 数组
     if (DEBUG)
     {
+      // 初始化 pre 数组
       pre = (int *)malloc(sizeof(int) * 1000000);
       // 值为 -1
       memset(pre, 0b11111111, sizeof(int) * 1000000);
-    }
 
-    // 初始化 mlen 数组
-    mlen = (int *)malloc(sizeof(int) * 1000000);
-    memset(mlen, 0b00000000, sizeof(int) * 1000000);
+      // 初始化 mlen 数组
+      mlen = (int *)malloc(sizeof(int) * 1000000);
+      memset(mlen, 0b00000000, sizeof(int) * 1000000);
+    }
   }
 
   IndexNSG::~IndexNSG()
@@ -957,16 +957,8 @@ namespace efanna2e
 
         std::sort(retset.begin(), retset.begin() + L);
 
-        // DEBUG 最长搜索路径
-        for (int i = 0; i < init_ids.size(); ++i)
-        {
-          mlen[retset[i].id] = 1;
-        }
-
         // greedy search
         int k = 0;
-        // 统计检索点的数量
-        int search_points_count = init_ids.size();
         while (k < (int)L)
         {
           int nk = L;
@@ -980,17 +972,11 @@ namespace efanna2e
             {
               unsigned id = final_graph_[n][m];
 
-              // DEBUG 更新每个点的最长搜索路径
-              mlen[id] = std::max(mlen[id], mlen[n] + 1);
-
               if (flags[id])
                 continue;
               flags[id] = 1;
               float dist =
                   distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-              
-              // DEBUG 统计检索点数量
-              ++search_points_count;
 
               if (dist >= retset[L - 1].distance)
                 continue;
@@ -1013,13 +999,6 @@ namespace efanna2e
         {
           indices[i] = retset[i].id;
         }
-
-        // DEBUG 记录最长搜索路径和检索点数量
-        auto max_len = std::max_element(mlen, mlen + 1000000);
-        this->max_search_lengths.push_back(*max_len);
-        // DEBUG 还原 mlen
-        memset(mlen, 0b00000000, sizeof(int) * 1000000);
-        this->search_points_counts.push_back(search_points_count);
       }
 
       // NSG 取消随机选点
@@ -1060,16 +1039,8 @@ namespace efanna2e
         // std::sort(retset.begin(), retset.begin() + L);
         std::sort(retset.begin(), retset.end());
 
-        // DEBUG 最长搜索路径
-        for (int i = 0; i < retset.size(); ++i)
-        {
-          mlen[retset[i].id] = 1;
-        }
-
         // greedy search
         int k = 0;
-        // 统计检索点的数量
-        int search_points_count = retset.size();
         while (k < (int)L)
         {
           int nk = (L < retset.size()) ? L : retset.size();
@@ -1083,17 +1054,11 @@ namespace efanna2e
             {
               unsigned id = final_graph_[n][m];
 
-              // DEBUG 更新每个点的最长搜索路径
-              mlen[id] = std::max(mlen[id], mlen[n] + 1);
-
               if (flags[id])
                 continue;
               flags[id] = 1;
               float dist =
                   distance_->compare(query, data_ + dimension_ * id, (unsigned)dimension_);
-              
-              // DEBUG 统计检索点数量
-              ++search_points_count;
 
               if (dist >= retset[(L < retset.size() ? L : retset.size()) - 1].distance)
                 continue;
@@ -1115,13 +1080,6 @@ namespace efanna2e
         {
           indices[i] = retset[i].id;
         }
-
-        // DEBUG 记录最长搜索路径和检索点数量
-        auto max_len = std::max_element(mlen, mlen + 1000000);
-        this->max_search_lengths.push_back(*max_len);
-        // DEBUG 还原 mlen
-        memset(mlen, 0b00000000, sizeof(int) * 1000000);
-        this->search_points_counts.push_back(search_points_count);
       }
     }
   }

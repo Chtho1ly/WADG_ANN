@@ -15,13 +15,13 @@
 #include "parameters.h"
 
 // DEBUG
-#define DEBUG true
+#define DEBUG false
 // print
 #define PRINT_INFO true
 // enable hot points
 #define HOT_POINTS true
 // nsg random points
-#define NSG_RANDOM false
+#define NSG_RANDOM true
 
 namespace efanna2e {
 
