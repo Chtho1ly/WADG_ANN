@@ -6,5 +6,8 @@ nsg_graph
 search_result
 .idea/
 cmake-build-debug/
-anals/
+anals/nsg_random
+anals/nsg_no_random
+anals/wadg
+anals/*.zip
 records/
